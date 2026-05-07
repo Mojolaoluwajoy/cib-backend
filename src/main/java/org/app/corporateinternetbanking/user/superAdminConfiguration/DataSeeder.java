@@ -1,4 +1,4 @@
-package org.app.corporateinternetbanking.user.adminConfiguration;
+package org.app.corporateinternetbanking.user.superAdminConfiguration;
 
 import org.app.corporateinternetbanking.user.domain.entity.User;
 import org.app.corporateinternetbanking.user.domain.repository.UserRepository;

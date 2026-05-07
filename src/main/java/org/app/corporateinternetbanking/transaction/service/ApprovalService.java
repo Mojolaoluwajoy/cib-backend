@@ -42,15 +42,18 @@ public class ApprovalService {
     private final AccountService accountService;
     private final PayStackClient payStackClient;
 
-    public TransactionApprovalResponse approveInternalTransaction(TransactionApprovalRequest request) throws TransactionAlreadyProcessed, TransactionDoesNotExist, InvalidStatus, UnsupportedTransactionType, UserNotFound, UnauthorizedAccess, InvalidAmount, AccountDoesNotExist, CurrencyNotFound, InsufficientBalance, IsNull {
+    public TransactionApprovalResponse approveInternalTransaction(TransactionApprovalRequest request) throws TransactionAlreadyProcessed, TransactionDoesNotExist, InvalidStatus, UnsupportedTransactionType, UserNotFound,
+            UnauthorizedAccess, InvalidAmount, AccountDoesNotExist, CurrencyNotFound, InsufficientBalance,
+            IsNull {
         Transaction transaction = transactionRepository.findById(request.getTransactionId())
                 .orElseThrow(() -> new TransactionDoesNotExist("This transaction does not exist"));
         User user = userRepository.findById(request.getApproverId())
                 .orElseThrow(() -> new UserNotFound("This user does not exist"));
         if (!user.getRole().equals(UserRole.APPROVER)) {
-            throw new UnauthorizedAccess("The approve must be an APPROVER");
+            throw new UnauthorizedAccess("The approver must have the role  APPROVER");
         }
-        if (!transaction.getStatus().name().equalsIgnoreCase("PENDING") && !transaction.getStatus().name().equalsIgnoreCase("PENDING_APPROVAL")) {
+        if (!transaction.getStatus().name().equalsIgnoreCase("PENDING") &&
+                !transaction.getStatus().name().equalsIgnoreCase("PENDING_APPROVAL")) {
             throw new TransactionAlreadyProcessed("This transaction has been processed");
         }
         if (request.getStatus() != TransactionStatus.SUCCESS && request.getStatus() != TransactionStatus.REJECTED) {
@@ -64,13 +67,10 @@ public class ApprovalService {
         }
         transaction.setProcessedAt(LocalDateTime.now());
         mapApprovalRequest(request);
-        if (transaction.getType()==TransactionType.INTERNAL_TRANSFER) {
+        if (transaction.getType() == TransactionType.INTERNAL_TRANSFER) {
             processInternalTransfer(transaction);
-        }
-       else if (transaction.getType()==TransactionType.EXTERNAL_PAYOUT){
+        } else if (transaction.getType() == TransactionType.EXTERNAL_PAYOUT) {
             processExternalPayout(transaction);
-
-
         }
         transaction = transactionRepository.save(transaction);
         return mapApprovalResponse(transaction);
@@ -78,19 +78,19 @@ public class ApprovalService {
 
     private void processExternalPayout(Transaction transaction) throws AccountDoesNotExist, InsufficientBalance, IsNull {
 
-        if (transaction.getPayoutRecipient()==null) {
+        if (transaction.getPayoutRecipient() == null) {
             throw new IsNull("Recipient missing");
         }
         transaction.setStatus(TransactionStatus.APPROVED);
 
-            accountService.debit(transaction.getSourceAccount().getId(), transaction.getAmount());
+        accountService.debit(transaction.getSourceAccount().getId(), transaction.getAmount());
 
 
-        Map<String,Object> body = new HashMap<>();
+        Map<String, Object> body = new HashMap<>();
         body.put("amount", transaction.getAmount().multiply(BigDecimal.valueOf(100)));
         body.put("recipient", transaction.getPayoutRecipient().getRecipientCode());
         body.put("reference", transaction.getReference());
-        payStackClient.initializeTransaction(body);
+        payStackClient.initiateTransfer(body);
     }
 
 
@@ -124,5 +124,5 @@ public class ApprovalService {
 
         transaction.setType(TransactionType.INTERNAL_TRANSFER);
         transaction.setStatus(TransactionStatus.SUCCESS);
-          }
+    }
 }

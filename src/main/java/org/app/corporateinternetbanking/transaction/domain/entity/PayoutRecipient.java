@@ -16,22 +16,22 @@ public class PayoutRecipient {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false,length = 20)
+    @Column(nullable = false, length = 20)
     private String accountNumber;
 
-    @Column(nullable = false,length = 10)
+    @Column(nullable = false, length = 100)
     private String bankCode;
 
     @Column(length = 100)
     private String bankName;
 
-    @Column(nullable = false,unique = true)
+    @Column(nullable = false, unique = true)
     private String recipientCode;
-    @Column(nullable = false,length = 10)
+    @Column(nullable = false, length = 100)
     private String recipientName;
 
-    private LocalDateTime createdAt=LocalDateTime.now();
+    private LocalDateTime createdAt = LocalDateTime.now();
 
-   }
+}
 
 

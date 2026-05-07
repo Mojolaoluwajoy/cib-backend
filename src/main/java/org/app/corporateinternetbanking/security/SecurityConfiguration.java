@@ -41,7 +41,7 @@ public class SecurityConfiguration {
                 "/webjars/**",
                 "/swagger-resources/**",
                 "/external/transaction/fund",
-                "/webhook/handleWebhook",};
+                "/webhook/paystack",};
         httpSecurity.csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(publicEndPoints)

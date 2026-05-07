@@ -24,9 +24,9 @@ public class Account {
     private Long id;
     @Column(unique = true)
     private String accountNumber;
-    private BigDecimal totalBalance;
-    private BigDecimal availableBalance;
-    private BigDecimal reservedBalance;
+    private BigDecimal totalBalance = BigDecimal.valueOf(10000);
+    private BigDecimal availableBalance = totalBalance;
+    private BigDecimal reservedBalance = BigDecimal.ZERO;
     @Enumerated(EnumType.STRING)
     private AccountType type;
     @OneToMany(mappedBy = "sourceAccount")
@@ -43,7 +43,7 @@ public class Account {
     @JoinColumn(name = "created_by")
     private User createdBy;
     private LocalDateTime createdAt = LocalDateTime.now();
-    private boolean flagged;
+    private boolean flagged = false;
 
 
     @PrePersist
@@ -56,5 +56,4 @@ public class Account {
             totalBalance = BigDecimal.valueOf(10000);
         }
     }
-
 }

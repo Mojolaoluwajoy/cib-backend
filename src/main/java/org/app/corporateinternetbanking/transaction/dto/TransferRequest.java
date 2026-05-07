@@ -5,6 +5,7 @@ import lombok.Setter;
 import org.app.corporateinternetbanking.transaction.enums.TransactionType;
 
 import java.math.BigDecimal;
+
 @Setter
 @Getter
 public class TransferRequest {
@@ -14,5 +15,6 @@ public class TransferRequest {
     private TransactionType type;
     private String idempotencyKey;
     private Long creatorId;
+    private Long payoutRecipientId;
 
 }

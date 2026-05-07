@@ -93,16 +93,16 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public void credit(Long accountId, BigDecimal amount) throws AccountDoesNotExist {
-        Account  account=repository.findById(accountId).orElseThrow(()-> new AccountDoesNotExist("Account not found"));
+        Account account = repository.findById(accountId).orElseThrow(() -> new AccountDoesNotExist("Account not found"));
 
-        account.setAvailableBalance(account.getAvailableBalance().subtract(amount));
+        account.setAvailableBalance(account.getAvailableBalance().add(amount));
         account.setTotalBalance(account.getTotalBalance().add(amount));
         repository.save(account);
     }
 
     @Override
     public void debit(Long accountId, BigDecimal amount) throws AccountDoesNotExist, InsufficientBalance {
-        Account  account=repository.findById(accountId).orElseThrow(()-> new AccountDoesNotExist("Account not found"));
+        Account account = repository.findById(accountId).orElseThrow(() -> new AccountDoesNotExist("Account not found"));
 
         if (account.getTotalBalance().compareTo(amount) < 0) {
             throw new InsufficientBalance("Insufficient funds");
@@ -114,10 +114,10 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public Account getValidAccount(String accountNumber) throws AccountDoesNotExist, IsNull {
-        if (accountNumber==null || accountNumber.isBlank()) {
-            throw new IsNull( "Account number is required");
+        if (accountNumber == null || accountNumber.isBlank()) {
+            throw new IsNull("Account number is required");
         }
-        return repository.findByAccountNumber(accountNumber).orElseThrow(()-> new AccountDoesNotExist("Account not found"));
+        return repository.findByAccountNumber(accountNumber).orElseThrow(() -> new AccountDoesNotExist("Account not found"));
     }
 
 

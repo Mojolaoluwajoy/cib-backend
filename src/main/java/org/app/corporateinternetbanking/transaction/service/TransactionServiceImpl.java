@@ -1,15 +1,18 @@
 package org.app.corporateinternetbanking.transaction.service;
 
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.app.corporateinternetbanking.account.domain.entity.Account;
 import org.app.corporateinternetbanking.account.domain.repository.AccountRepository;
 import org.app.corporateinternetbanking.account.exception.AccountDoesNotExist;
 import org.app.corporateinternetbanking.account.exception.InvalidAccount;
+import org.app.corporateinternetbanking.transaction.domain.entity.PayoutRecipient;
 import org.app.corporateinternetbanking.transaction.domain.entity.Transaction;
+import org.app.corporateinternetbanking.transaction.domain.repository.PayoutRecipientRepository;
 import org.app.corporateinternetbanking.transaction.domain.repository.TransactionRepository;
-import org.app.corporateinternetbanking.transaction.dto.TransferRequest;
 import org.app.corporateinternetbanking.transaction.dto.TransactionResponse;
+import org.app.corporateinternetbanking.transaction.dto.TransferRequest;
 import org.app.corporateinternetbanking.transaction.enums.TransactionStatus;
 import org.app.corporateinternetbanking.transaction.exceptions.*;
 import org.app.corporateinternetbanking.transaction.utils.mapper.TransactionMap;
@@ -34,7 +37,9 @@ import static org.app.corporateinternetbanking.transaction.utils.mapper.Transact
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class TransactionServiceImpl implements TransactionService {
+    private final PayoutRecipientRepository payoutRecipientRepository;
     @Autowired
     AccountRepository accountRepository;
     @Autowired
@@ -44,84 +49,65 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     public TransactionResponse initiateTransaction(TransferRequest request) throws InvalidAmount, AccountDoesNotExist, UserNotFound, UnauthorizedAccess, DuplicateTransaction, InsufficientBalance, InvalidAccount, IsNull {
+        Transaction savedTransaction = switch (request.getType()) {
+            case INTERNAL_TRANSFER -> validateInternalTransaction(request);
 
-        Transaction transaction = getTransaction(request);
+            case EXTERNAL_FUNDING -> validateFunding(request);
 
-        Result result = getResult(request);
-
-        if (request.getAmount().compareTo(result.sourceAccount().getAvailableBalance()) > 0) {
-            throw new InsufficientBalance("The balance must be greater than the amount to transfer");
-
-        }
-
-        switch (request.getType()){
-            case INTERNAL_TRANSFER -> {
-                validateInternalTransaction(request.getSourceAccount(), request.getDestinationAccount());
-                transaction.setStatus(TransactionStatus.PENDING_APPROVAL);
-            }
-
-            case EXTERNAL_FUNDING -> {
-                validateFunding(request.getDestinationAccount());
-                transaction.setStatus(TransactionStatus.PENDING);
-            }
-
-            case EXTERNAL_PAYOUT -> {
-                validatePayout(request.getSourceAccount());
-            transaction.setStatus(TransactionStatus.PENDING_APPROVAL);
-            }
-          }
-        result.sourceAccount().setAvailableBalance(result.sourceAccount().getTotalBalance().subtract(request.getAmount()));
-        result.sourceAccount().setReservedBalance(result.sourceAccount().getReservedBalance().add(request.getAmount()));
-        transaction.setSourceAccount(result.sourceAccount());
-        transaction.setDestinationAccount(result.destinationAccount());
-
-        Transaction savedTransaction = transactionRepository.save(transaction);
-
+            case EXTERNAL_PAYOUT -> validatePayout(request);
+        };
         return mapResponse(savedTransaction);
     }
 
+    private Account validateAccountNumber(String accountNumber) throws AccountDoesNotExist {
+        Account account = accountRepository.findByAccountNumber(accountNumber).orElseThrow(() -> new AccountDoesNotExist("Account number does not exist"));
 
-
-
-    private Result getResult(TransferRequest request) throws AccountDoesNotExist {
-        Account sourceAccount = accountRepository.findByAccountNumber(request.getSourceAccount())
-                .orElseThrow(() -> new AccountDoesNotExist("This source account does not exist"));
-        Account destinationAccount = accountRepository.findByAccountNumber(request.getDestinationAccount())
-                .orElseThrow(() -> new AccountDoesNotExist("This destination account does not exist"));
-        Result result = new Result(sourceAccount, destinationAccount);
-        return result;
+        return account;
     }
 
-    private record Result(Account sourceAccount, Account destinationAccount) {
-    }
+    private Transaction validateInternalTransaction(TransferRequest request) throws InvalidAccount, IsNull, AccountDoesNotExist, UserNotFound, InvalidAmount, UnauthorizedAccess, DuplicateTransaction {
+        Transaction transaction = getTransaction(request);
 
-private void validateAccountNumber(String accountNumber) throws AccountDoesNotExist {
-        Account account=accountRepository.findByAccountNumber(accountNumber).orElseThrow(() -> new AccountDoesNotExist("Account number does not exist"));
-}
-    private void validateInternalTransaction(String sourceAccount,String destinationAccount) throws InvalidAccount, IsNull, AccountDoesNotExist {
-       if (sourceAccount.equals(null) || destinationAccount.equals(null)) {
-           throw new IsNull("The source account and destination account cannot be null");
-       }
-        if (sourceAccount.equals(destinationAccount)) {
+        Account source = validateAccountNumber(request.getSourceAccount());
+        Account destination = validateAccountNumber(request.getDestinationAccount());
+        if (request.getSourceAccount().equals(request.getDestinationAccount())) {
             throw new InvalidAccount("Cannot transfer to the same account");
         }
-        validateAccountNumber(sourceAccount);
-        validateAccountNumber(destinationAccount);
-    }
-    private void validateFunding(String destinationAccount) throws IsNull, AccountDoesNotExist {
-        if (destinationAccount == null) {
-            throw new IsNull("The destination account cannot be null");
-        }
-        validateAccountNumber(destinationAccount);
-    }
-     private void validatePayout(String sourceAccount) throws IsNull, AccountDoesNotExist {
-        if (sourceAccount == null) {
-            throw new IsNull("The source account cannot be null");
-        }
-        validateAccountNumber(sourceAccount);
+
+        source.setAvailableBalance(source.getTotalBalance().subtract(request.getAmount()));
+        source.setReservedBalance(source.getReservedBalance().add(request.getAmount()));
+        transaction.setSourceAccount(source);
+        transaction.setDestinationAccount(destination);
+        transaction.setStatus(TransactionStatus.PENDING_APPROVAL);
+        return transactionRepository.save(transaction);
+
     }
 
-    
+    private Transaction validateFunding(TransferRequest request) throws IsNull, AccountDoesNotExist, UserNotFound, InvalidAmount, UnauthorizedAccess, DuplicateTransaction {
+        Transaction transaction = getTransaction(request);
+
+        Account destination = validateAccountNumber(request.getDestinationAccount());
+        transaction.setDestinationAccount(destination);
+        transaction.setStatus(TransactionStatus.PENDING);
+        return transactionRepository.save(transaction);
+
+    }
+
+    private Transaction validatePayout(TransferRequest request) throws IsNull, AccountDoesNotExist, UserNotFound, InvalidAmount, UnauthorizedAccess, DuplicateTransaction {
+        Transaction transaction = getTransaction(request);
+
+        Account source = validateAccountNumber(request.getSourceAccount());
+        transaction.setSourceAccount(source);
+        transaction.setStatus(TransactionStatus.PENDING_APPROVAL);
+
+        PayoutRecipient recipient = payoutRecipientRepository.findById(request.getPayoutRecipientId())
+                .orElseThrow(() -> new IsNull("Recipient not found"));
+        transaction.setPayoutRecipient(recipient);
+        return transactionRepository.save(transaction);
+
+
+    }
+
     private Transaction getTransaction(TransferRequest request) throws DuplicateTransaction, InvalidAmount, UserNotFound, UnauthorizedAccess {
         Optional<Transaction> existingTransaction = transactionRepository.findByIdempotencyKey(request.getIdempotencyKey());
 
@@ -131,7 +117,6 @@ private void validateAccountNumber(String accountNumber) throws AccountDoesNotEx
         if (request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new InvalidAmount("Amount must be greater than zero");
         }
-
 
         User user = userRepository.findById(request.getCreatorId())
                 .orElseThrow(() -> new UserNotFound("This user does not exist"));
@@ -147,12 +132,10 @@ private void validateAccountNumber(String accountNumber) throws AccountDoesNotEx
         return transaction;
     }
 
-
     public Transaction findByTransactionReference(String transactionReference) throws TransactionDoesNotExist {
         return transactionRepository.findByIdempotencyKey(transactionReference)
-                .orElseThrow(()-> new TransactionDoesNotExist("Transaction not found"));
+                .orElseThrow(() -> new TransactionDoesNotExist("Transaction not found"));
     }
-
 
     @Override
     public List<TransactionResponse> viewPendingTransactions() throws NoPendingTransactionFound {
@@ -216,9 +199,12 @@ private void validateAccountNumber(String accountNumber) throws AccountDoesNotEx
 
     @Override
     public void markFailed(String reference) throws TransactionDoesNotExist {
-        Transaction transaction=findByTransactionReference(reference);
+        Transaction transaction = findByTransactionReference(reference);
         transaction.setStatus(TransactionStatus.FAILED);
         transactionRepository.save(transaction);
+    }
+
+    private record Result(Account sourceAccount, Account destinationAccount) {
     }
 
 
