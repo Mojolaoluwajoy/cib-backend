@@ -154,21 +154,27 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(GenericResponse.failed(exception.getMessage()), HttpStatus.BAD_REQUEST);
     }
 
-@ExceptionHandler(InvalidSignature.class)
+    @ExceptionHandler(InvalidSignature.class)
     public ResponseEntity<GenericResponse> handleInvalidSignature(InvalidSignature exception) {
         log.error("Invalid signature: {}", exception.getMessage());
         return new ResponseEntity<>(GenericResponse.failed(exception.getMessage()), HttpStatus.BAD_REQUEST);
     }
 
-@ExceptionHandler(InvalidAccount.class)
+    @ExceptionHandler(InvalidAccount.class)
     public ResponseEntity<GenericResponse> handleInvalidAccount(InvalidAccount exception) {
         log.error("Invalid account: {}", exception.getMessage());
         return new ResponseEntity<>(GenericResponse.failed(exception.getMessage()), HttpStatus.BAD_REQUEST);
     }
 
-@ExceptionHandler(IsNull.class)
+    @ExceptionHandler(IsNull.class)
     public ResponseEntity<GenericResponse> handleIsNull(IsNull exception) {
         log.error("Is null: {}", exception.getMessage());
+        return new ResponseEntity<>(GenericResponse.failed(exception.getMessage()), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(NotApproved.class)
+    public ResponseEntity<GenericResponse> handleNotApproved(NotApproved exception) {
+        log.error("Not approved: {}", exception.getMessage());
         return new ResponseEntity<>(GenericResponse.failed(exception.getMessage()), HttpStatus.BAD_REQUEST);
     }
 

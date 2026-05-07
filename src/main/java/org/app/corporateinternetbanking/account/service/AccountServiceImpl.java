@@ -95,7 +95,7 @@ public class AccountServiceImpl implements AccountService {
     public void credit(Long accountId, BigDecimal amount) throws AccountDoesNotExist {
         Account account = repository.findById(accountId).orElseThrow(() -> new AccountDoesNotExist("Account not found"));
 
-        account.setAvailableBalance(account.getAvailableBalance().add(amount));
+        account.setAvailableBalance(account.getAvailableBalance().subtract(amount));
         account.setTotalBalance(account.getTotalBalance().add(amount));
         repository.save(account);
     }

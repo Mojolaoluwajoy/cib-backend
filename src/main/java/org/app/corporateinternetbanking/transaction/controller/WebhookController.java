@@ -6,7 +6,9 @@ import lombok.RequiredArgsConstructor;
 import org.app.corporateinternetbanking.account.exception.AccountDoesNotExist;
 import org.app.corporateinternetbanking.commons.response.GenericResponse;
 import org.app.corporateinternetbanking.transaction.dto.PaystackWebhookRequest;
+import org.app.corporateinternetbanking.transaction.exceptions.InsufficientBalance;
 import org.app.corporateinternetbanking.transaction.exceptions.InvalidSignature;
+import org.app.corporateinternetbanking.transaction.exceptions.NotApproved;
 import org.app.corporateinternetbanking.transaction.exceptions.TransactionDoesNotExist;
 import org.app.corporateinternetbanking.transaction.service.WebhookPaymentService;
 import org.springframework.http.HttpStatus;
@@ -19,14 +21,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/webhook")
 @RequiredArgsConstructor
-@Tag(name = "Webhook",description = "Handles webhook")
+@Tag(name = "Webhook", description = "Handles webhook")
 public class WebhookController {
     private final WebhookPaymentService webhookPaymentService;
 
     @Operation(summary = "It handles webhook")
     @PostMapping("/paystack")
-    public ResponseEntity<GenericResponse> handleWebhook(@RequestBody PaystackWebhookRequest webhookRequest) throws TransactionDoesNotExist, AccountDoesNotExist, InvalidSignature {
-        return new ResponseEntity<>(GenericResponse.success(webhookPaymentService.handleWebhook(webhookRequest),"Received"), HttpStatus.OK);
+    public ResponseEntity<GenericResponse> handleWebhook(@RequestBody PaystackWebhookRequest webhookRequest) throws TransactionDoesNotExist, AccountDoesNotExist, InvalidSignature, NotApproved, InsufficientBalance {
+        return new ResponseEntity<>(GenericResponse.success(webhookPaymentService.handleWebhook(webhookRequest), "Received"), HttpStatus.OK);
     }
 
 }

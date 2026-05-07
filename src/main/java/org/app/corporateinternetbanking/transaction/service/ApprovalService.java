@@ -83,9 +83,6 @@ public class ApprovalService {
         }
         transaction.setStatus(TransactionStatus.APPROVED);
 
-        accountService.debit(transaction.getSourceAccount().getId(), transaction.getAmount());
-
-
         Map<String, Object> body = new HashMap<>();
         body.put("amount", transaction.getAmount().multiply(BigDecimal.valueOf(100)));
         body.put("recipient", transaction.getPayoutRecipient().getRecipientCode());
