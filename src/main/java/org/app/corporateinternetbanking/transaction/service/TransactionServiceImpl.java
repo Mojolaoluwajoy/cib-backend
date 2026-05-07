@@ -76,6 +76,7 @@ public class TransactionServiceImpl implements TransactionService {
 
         source.setAvailableBalance(source.getTotalBalance().subtract(request.getAmount()));
         source.setReservedBalance(source.getReservedBalance().add(request.getAmount()));
+
         transaction.setSourceAccount(source);
         transaction.setDestinationAccount(destination);
         transaction.setStatus(TransactionStatus.PENDING_APPROVAL);
@@ -99,6 +100,8 @@ public class TransactionServiceImpl implements TransactionService {
         Account source = validateAccountNumber(request.getSourceAccount());
         transaction.setSourceAccount(source);
         transaction.setStatus(TransactionStatus.PENDING_APPROVAL);
+        source.setAvailableBalance(source.getTotalBalance().subtract(request.getAmount()));
+        source.setReservedBalance(source.getReservedBalance().add(request.getAmount()));
 
         PayoutRecipient recipient = payoutRecipientRepository.findById(request.getPayoutRecipientId())
                 .orElseThrow(() -> new IsNull("Recipient not found"));
