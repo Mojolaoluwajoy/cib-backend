@@ -1,6 +1,7 @@
 package org.app.corporateinternetbanking.transaction.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.app.corporateinternetbanking.account.domain.entity.Account;
 import org.app.corporateinternetbanking.account.exception.AccountDoesNotExist;
 import org.app.corporateinternetbanking.account.service.AccountService;
@@ -31,6 +32,7 @@ import java.util.Map;
 import static org.app.corporateinternetbanking.transaction.utils.mapper.ApprovalMap.mapApprovalRequest;
 import static org.app.corporateinternetbanking.transaction.utils.mapper.ApprovalMap.mapApprovalResponse;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ApprovalService {
@@ -85,6 +87,7 @@ public class ApprovalService {
 
         Map<String, Object> body = new HashMap<>();
         body.put("amount", transaction.getAmount().multiply(BigDecimal.valueOf(100)));
+        log.info("Transfer amount in kobo: {}", transaction.getAmount().multiply(BigDecimal.valueOf(100)));
         body.put("recipient", transaction.getPayoutRecipient().getRecipientCode());
         body.put("reference", transaction.getReference());
         payStackClient.initiateTransfer(body);
