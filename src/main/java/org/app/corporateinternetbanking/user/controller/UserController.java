@@ -31,7 +31,6 @@ public class UserController {
     public ResponseEntity<GenericResponse> sendInvitation(@RequestBody InvitationRequest request) {
         String email = service.sendInvitationTokenToUser(request);
         return new ResponseEntity<>(GenericResponse.success(email, "token successfully sent"), HttpStatus.CREATED);
-
     }
 
     @Operation(summary = "Create a user with token from admin")
@@ -39,7 +38,6 @@ public class UserController {
     public ResponseEntity<GenericResponse> createUser(@RequestBody UserRegistrationRequest request) throws UserAlreadyRegistered, UnauthorizedAccess, OrganizationDoesNotExist, TokenExpiredOrInvalid, SuperAdminAlreadyExists {
         UserResponse response = service.createUserWithToken(request);
         return new ResponseEntity<>(GenericResponse.success(response, "user registration successful"), HttpStatus.CREATED);
-
     }
 
     @Operation(summary = "view all users")
@@ -56,5 +54,5 @@ public class UserController {
 
     }
 
-    
+
 }

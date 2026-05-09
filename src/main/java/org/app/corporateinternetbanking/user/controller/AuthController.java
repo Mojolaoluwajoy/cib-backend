@@ -37,26 +37,22 @@ public class AuthController {
         return new ResponseEntity<>(GenericResponse.success(response, "Authentication successful"), HttpStatus.OK);
     }
 
-
     @Operation(summary = "change password")
     @PostMapping("/password/reset")
     public ResponseEntity<GenericResponse> resetPassword(@RequestBody PasswordResetRequest resetRequest) throws IncorrectPassword, InvalidEmail {
         return new ResponseEntity<>(GenericResponse.success(service.resetPassword(resetRequest), "Your password has been reset"), HttpStatus.CREATED);
-
     }
 
     @Operation(summary = "password reset token")
     @PostMapping("/password/token")
     public ResponseEntity<GenericResponse> resetToken(@RequestBody String email) throws InvalidEmail {
         return new ResponseEntity<>(GenericResponse.success(service.sendForgotPasswordToken(email), "A token has bee sent to your email"), HttpStatus.CREATED);
-
     }
 
     @Operation(summary = "Reset forgotten password")
     @PostMapping("/forgotten/password")
     public ResponseEntity<GenericResponse> resetForgottenPassword(@RequestBody ForgotPasswordRequest resetRequest) throws InvalidEmail, TokenExpiredOrInvalid {
         return new ResponseEntity<>(GenericResponse.success(service.resetForgottenPassword(resetRequest), "Your password has been reset"), HttpStatus.CREATED);
-
     }
 
 

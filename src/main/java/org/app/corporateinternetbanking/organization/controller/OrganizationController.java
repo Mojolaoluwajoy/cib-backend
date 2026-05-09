@@ -42,9 +42,7 @@ public class OrganizationController {
     @PostMapping("/findBy")
     public ResponseEntity<GenericResponse> findById(@RequestBody Long id) throws OrganizationDoesNotExist {
         OrganizationOnlyResponse response;
-
         response = service.viewById(id);
-
         return new ResponseEntity<>(GenericResponse.success(response, "Organization with the specified id found"), HttpStatus.OK);
     }
 

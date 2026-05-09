@@ -34,7 +34,7 @@ public class ExternalTransactionController {
     private final PaymentService paymentService;
     private final RecipientService recipientService;
 
-    @Operation(summary = "It fund sthe system account from an external account(paystack")
+    @Operation(summary = "It fund the system account from an external account(paystack")
     @PostMapping("/fund")
     public ResponseEntity<GenericResponse> fund(@RequestBody FundRequest fundRequest) throws UserNotFound, InvalidAccount, InvalidAmount, InsufficientBalance, UnauthorizedAccess, IsNull, DuplicateTransaction, AccountDoesNotExist {
         fundRequest.setType(TransactionType.EXTERNAL_FUNDING);
