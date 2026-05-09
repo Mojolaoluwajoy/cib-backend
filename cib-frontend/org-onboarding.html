@@ -459,8 +459,7 @@
                     <tr>
                         <th>Organization</th>
                         <th>Reg. number</th>
-                        <th>Admin</th>
-                        <th>Email</th>
+                        <th>Org ID</th>
                         <th>Status</th>
                         <th>Action</th>
                     </tr>
@@ -604,22 +603,23 @@
         if (res.ok && data.data && data.data.length > 0) {
           renderOrgsTable(data.data);
         } else {
-          tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><i class="ti ti-building"></i> No organizations found.</div></td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="5"><div class="empty"><i class="ti ti-building"></i> No organizations found.</div></td></tr>`;
         }
 
       } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><i class="ti ti-wifi-off"></i> Could not load organizations. Is the server running?</div></td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5"><div class="empty"><i class="ti ti-wifi-off"></i> Could not load organizations. Is the server running?</div></td></tr>`;
       }
     }
 
     // ── Render organizations into the table ──
+    // Uses OrganizationOnlyResponse: id, name, registrationNumber, organizationStatus
     function renderOrgsTable(orgs) {
       const tbody = document.getElementById('orgs-table-body');
       tbody.innerHTML = orgs.map(org => {
-        const statusPill = getStatusPill(org.status);
+        const statusPill = getStatusPill(org.organizationStatus);
         // Only show approve button if status is PENDING
-        const approveBtn = org.status === 'PENDING' || org.status === 'AWAITING_APPROVAL'
-          ? `<button class="btn btn-success" onclick="approveOrg(${org.id}, ${org.adminId})">
+        const approveBtn = org.organizationStatus === 'PENDING'
+          ? `<button class="btn btn-success" onclick="approveOrg(${org.id}, null)">
                <i class="ti ti-check"></i> Approve
              </button>`
           : '—';
@@ -628,9 +628,8 @@
           <tr>
             <td><strong>${org.name || '—'}</strong></td>
             <td>${org.registrationNumber || '—'}</td>
-            <td>${org.firstName || ''} ${org.lastName || ''}</td>
-            <td>${org.organizationEmail || org.email || '—'}</td>
-            <td><span class="pill ${statusPill}">${org.status || 'Unknown'}</span></td>
+            <td>${org.id || '—'}</td>
+            <td><span class="pill ${statusPill}">${org.organizationStatus || 'Unknown'}</span></td>
             <td>${approveBtn}</td>
           </tr>`;
       }).join('');
@@ -699,10 +698,10 @@
     // ── Helper: get pill class based on status ──
     function getStatusPill(status) {
       const s = (status || '').toUpperCase();
-      if (s === 'APPROVED' || s === 'ACTIVE')              return 'pill-green';
-      if (s === 'PENDING'  || s === 'AWAITING_APPROVAL')   return 'pill-amber';
-      if (s === 'IN_REVIEW')                                return 'pill-blue';
-      if (s === 'REJECTED' || s === 'FAILED')               return 'pill-red';
+      if (s === 'APPROVED' || s === 'ACTIVE')   return 'pill-green';
+      if (s === 'PENDING')                       return 'pill-amber';
+      if (s === 'IN_REVIEW')                     return 'pill-blue';
+      if (s === 'REJECTED' || s === 'FAILED')    return 'pill-red';
       return 'pill-amber';
     }
 

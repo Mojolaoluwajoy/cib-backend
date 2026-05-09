@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>CIB Platform — User Onboarding</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" rel="stylesheet"/>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+          --bg:        #f4f5f7;
+          --surface:   #ffffff;
+          --border:    #e4e6eb;
+          --text:      #111827;
+          --muted:     #6b7280;
+          --hint:      #9ca3af;
+          --blue:      #1a56db;
+          --blue-bg:   #eff6ff;
+          --blue-text: #1e40af;
+          --green:     #0f9f6e;
+          --green-bg:  #ecfdf5;
+          --green-text:#065f46;
+          --amber:     #d97706;
+          --amber-bg:  #fffbeb;
+          --amber-text:#92400e;
+          --red:       #e02424;
+          --red-bg:    #fef2f2;
+          --red-text:  #991b1b;
+          --navy:      #0f172a;
+          --radius:    8px;
+          --radius-lg: 12px;
+        }
+
+        body {
+          font-family: 'DM Sans', sans-serif;
+          background: var(--bg);
+          color: var(--text);
+          font-size: 14px;
+          min-height: 100vh;
+          display: flex;
+        }
+
+        /* ── Sidebar ── */
+        .sidebar {
+          width: 220px; flex-shrink: 0;
+          background: var(--navy);
+          display: flex; flex-direction: column;
+          min-height: 100vh;
+          position: fixed; top: 0; left: 0; bottom: 0;
+        }
+        .sidebar-logo { padding: 24px 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .logo-name { font-size: 16px; font-weight: 600; color: #fff; letter-spacing: -0.3px; }
+        .logo-tag  { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+        .nav { padding: 16px 12px; flex: 1; }
+        .nav-section {
+          font-size: 10px; font-weight: 600;
+          color: rgba(255,255,255,0.3);
+          text-transform: uppercase; letter-spacing: 0.8px;
+          padding: 12px 8px 4px;
+        }
+        .nav-item {
+          display: flex; align-items: center; gap: 10px;
+          padding: 9px 10px; border-radius: var(--radius);
+          cursor: pointer; font-size: 13px;
+          color: rgba(255,255,255,0.55);
+          text-decoration: none;
+          transition: background 0.15s, color 0.15s;
+          margin-bottom: 1px;
+        }
+        .nav-item:hover  { background: rgba(255,255,255,0.07); color: #fff; }
+        .nav-item.active { background: var(--blue); color: #fff; }
+        .nav-item i { font-size: 17px; flex-shrink: 0; }
+        .sidebar-footer { padding: 16px 12px; border-top: 1px solid rgba(255,255,255,0.08); }
+        .user-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; }
+        .avatar {
+          width: 32px; height: 32px; border-radius: 50%;
+          background: var(--blue);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 12px; font-weight: 600; color: #fff; flex-shrink: 0;
+        }
+        .user-name { font-size: 13px; color: rgba(255,255,255,0.8); font-weight: 500; }
+        .user-role { font-size: 11px; color: rgba(255,255,255,0.35); }
+
+        /* ── Main ── */
+        .main { margin-left: 220px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+        /* ── Topbar ── */
+        .topbar {
+          background: var(--surface); border-bottom: 1px solid var(--border);
+          padding: 0 28px; height: 60px;
+          display: flex; align-items: center; justify-content: space-between;
+          position: sticky; top: 0; z-index: 10;
+        }
+        .page-title { font-size: 15px; font-weight: 600; color: var(--text); }
+        .page-sub   { font-size: 12px; color: var(--muted); margin-top: 1px; }
+        .icon-btn {
+          background: none; border: none; cursor: pointer;
+          color: var(--muted); font-size: 20px;
+          display: flex; align-items: center; justify-content: center;
+          padding: 4px; border-radius: var(--radius);
+        }
+        .icon-btn:hover { background: var(--bg); }
+
+        /* ── Content ── */
+        .content { padding: 28px; flex: 1; display: flex; flex-direction: column; gap: 24px; }
+
+        /* ── Tabs ── */
+        .tabs {
+          display: flex; gap: 4px;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-lg);
+          padding: 6px;
+          width: fit-content;
+        }
+        .tab {
+          padding: 8px 20px; border-radius: var(--radius);
+          font-size: 13px; font-weight: 500;
+          cursor: pointer; border: none;
+          background: none; color: var(--muted);
+          font-family: 'DM Sans', sans-serif;
+          transition: background 0.15s, color 0.15s;
+          display: flex; align-items: center; gap: 7px;
+        }
+        .tab:hover { color: var(--text); background: var(--bg); }
+        .tab.active { background: var(--blue); color: #fff; }
+        .tab i { font-size: 16px; }
+
+        /* ── Tab panels ── */
+        .tab-panel { display: none; flex-direction: column; gap: 24px; }
+        .tab-panel.active { display: flex; }
+
+        /* ── Cards ── */
+        .card {
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-lg);
+          padding: 24px;
+        }
+        .card-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+        .card-sub   { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+
+        /* ── Steps indicator ── */
+        .steps {
+          display: flex; align-items: center; gap: 0;
+          margin-bottom: 28px;
+        }
+        .step {
+          display: flex; align-items: center; gap: 10px;
+          font-size: 13px; font-weight: 500;
+        }
+        .step-num {
+          width: 28px; height: 28px; border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 12px; font-weight: 600; flex-shrink: 0;
+        }
+        .step.done   .step-num { background: var(--green);    color: #fff; }
+        .step.active .step-num { background: var(--blue);     color: #fff; }
+        .step.idle   .step-num { background: var(--border);   color: var(--muted); }
+        .step.done   .step-label { color: var(--green); }
+        .step.active .step-label { color: var(--blue); font-weight: 600; }
+        .step.idle   .step-label { color: var(--muted); }
+        .step-line { flex: 1; height: 2px; background: var(--border); margin: 0 12px; min-width: 40px; }
+        .step-line.done { background: var(--green); }
+
+        /* ── Form ── */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group.full { grid-column: 1 / -1; }
+        label {
+          font-size: 12px; font-weight: 600;
+          color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px;
+        }
+        input, select {
+          width: 100%; padding: 10px 12px;
+          border: 1px solid var(--border); border-radius: var(--radius);
+          font-size: 14px; font-family: 'DM Sans', sans-serif;
+          color: var(--text); background: var(--surface);
+          outline: none; transition: border-color 0.15s;
+        }
+        input:focus, select:focus {
+          border-color: var(--blue);
+          box-shadow: 0 0 0 3px rgba(26,86,219,0.1);
+        }
+        input::placeholder { color: var(--hint); }
+        .form-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; margin-top: 8px; }
+
+        /* ── Invite-only layout (single column centered) ── */
+        .invite-wrap { max-width: 480px; }
+        .invite-wrap input { padding: 11px 14px; font-size: 14px; }
+
+        /* ── Buttons ── */
+        .btn {
+          padding: 10px 22px; border-radius: var(--radius);
+          font-size: 14px; font-weight: 500;
+          font-family: 'DM Sans', sans-serif;
+          cursor: pointer; border: none;
+          display: inline-flex; align-items: center; gap: 8px;
+          transition: opacity 0.15s;
+        }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-primary { background: var(--blue); color: #fff; }
+        .btn-primary:hover:not(:disabled) { opacity: 0.9; }
+
+        /* ── Alert ── */
+        .alert {
+          padding: 12px 16px; border-radius: var(--radius);
+          font-size: 13px; font-weight: 500;
+          display: none; align-items: center; gap: 10px;
+          margin-bottom: 16px;
+        }
+        .alert.show    { display: flex; }
+        .alert-success { background: var(--green-bg); color: var(--green-text); }
+        .alert-error   { background: var(--red-bg);   color: var(--red-text); }
+        .alert-info    { background: var(--blue-bg);  color: var(--blue-text); }
+
+        /* ── Users table ── */
+        .table-wrapper { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        thead tr { border-bottom: 2px solid var(--border); }
+        th {
+          text-align: left; padding: 10px 12px;
+          font-size: 11px; font-weight: 600;
+          color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        td { padding: 12px; border-bottom: 1px solid var(--border); color: var(--text); }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: var(--bg); }
+
+        /* ── Pills ── */
+        .pill { font-size: 10px; font-weight: 600; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+        .pill-green { background: var(--green-bg); color: var(--green-text); }
+        .pill-amber { background: var(--amber-bg); color: var(--amber-text); }
+        .pill-blue  { background: var(--blue-bg);  color: var(--blue-text); }
+        .pill-red   { background: var(--red-bg);   color: var(--red-text); }
+
+        /* ── Empty state ── */
+        .empty { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 13px; }
+        .empty i { font-size: 36px; display: block; margin-bottom: 10px; color: var(--hint); }
+
+        /* ── Info box ── */
+        .info-box {
+          background: var(--blue-bg); border: 1px solid #bfdbfe;
+          border-radius: var(--radius); padding: 12px 16px;
+          font-size: 13px; color: var(--blue-text);
+          display: flex; gap: 10px; align-items: flex-start;
+          margin-bottom: 20px;
+        }
+        .info-box i { font-size: 17px; flex-shrink: 0; margin-top: 1px; }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<!-- ═══════════════ SIDEBAR ═══════════════ -->
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        <div class="logo-name">CIB Platform</div>
+        <div class="logo-tag">Corporate &amp; Investment Banking</div>
+    </div>
+    <nav class="nav">
+        <div class="nav-section">Overview</div>
+        <a class="nav-item" href="index.html"><i class="ti ti-layout-dashboard"></i> Dashboard</a>
+        <div class="nav-section">Clients</div>
+        <a class="nav-item" href="org-onboarding.html"><i class="ti ti-building"></i> Org Onboarding</a>
+        <a class="nav-item active" href="user-onboarding.html"><i class="ti ti-user-plus"></i> User Onboarding</a>
+        <a class="nav-item" href="accounts.html"><i class="ti ti-building-bank"></i> Accounts</a>
+        <div class="nav-section">Transactions</div>
+        <a class="nav-item" href="transfers.html"><i class="ti ti-arrow-left-right"></i> Transfers</a>
+        <a class="nav-item" href="funding.html"><i class="ti ti-cash"></i> External Funding</a>
+        <a class="nav-item" href="payouts.html"><i class="ti ti-send"></i> Payouts</a>
+        <div class="nav-section">System</div>
+        <a class="nav-item" href="settings.html"><i class="ti ti-settings"></i> Settings</a>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="user-row">
+            <div class="avatar" id="sidebar-avatar">?</div>
+            <div>
+                <div class="user-name" id="sidebar-name">Guest</div>
+                <div class="user-role" id="sidebar-role">Not logged in</div>
+            </div>
+        </div>
+    </div>
+</aside>
+
+<!-- ═══════════════ MAIN ═══════════════ -->
+<div class="main">
+    <header class="topbar">
+        <div>
+            <div class="page-title">User Onboarding</div>
+            <div class="page-sub">Invite users and complete their registration</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+            <button class="icon-btn"><i class="ti ti-bell"></i></button>
+            <div class="avatar" id="topbar-avatar">?</div>
+        </div>
+    </header>
+
+    <main class="content">
+
+        <!-- ── Tabs: Switch between Invite, Register, View All ── -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('invite')">
+                <i class="ti ti-mail-forward"></i> Send Invite
+            </button>
+            <button class="tab" onclick="switchTab('register')">
+                <i class="ti ti-user-check"></i> Complete Registration
+            </button>
+            <button class="tab" id="tab-viewall" onclick="switchTab('viewall')">
+                <i class="ti ti-users"></i> All Users
+            </button>
+        </div>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- TAB 1: Send Invitation (ADMIN only)        -->
+        <!-- ══════════════════════════════════════════ -->
+        <div class="tab-panel active" id="panel-invite">
+            <div class="card">
+                <div class="card-title">Send invitation</div>
+                <div class="card-sub">
+                    An invitation token will be sent to the user's email. They use it to complete registration.
+                </div>
+
+                <!-- Only shown if user is ADMIN -->
+                <div class="hidden" id="invite-admin-only">
+                    <div class="info-box">
+                        <i class="ti ti-shield-lock"></i>
+                        <span>Only <strong>ADMIN</strong> users can send invitations. Please log in as an admin to use this feature.</span>
+                    </div>
+                </div>
+
+                <div class="invite-wrap" id="invite-form-wrap">
+                    <div class="alert alert-success" id="invite-success">
+                        <i class="ti ti-circle-check"></i>
+                        <span id="invite-success-msg">Invitation sent successfully!</span>
+                    </div>
+                    <div class="alert alert-error" id="invite-error">
+                        <i class="ti ti-alert-circle"></i>
+                        <span id="invite-error-msg">Failed to send invitation.</span>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:16px">
+                        <label>User email address</label>
+                        <input id="invite-email" placeholder="e.g. john@dangote.com" type="email"/>
+                    </div>
+
+                    <button class="btn btn-primary" id="invite-btn" onclick="sendInvitation()">
+                        <i class="ti ti-send"></i> Send invitation
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- TAB 2: Complete Registration (Public)      -->
+        <!-- ══════════════════════════════════════════ -->
+        <div class="tab-panel" id="panel-register">
+            <div class="card">
+                <div class="card-title">Complete your registration</div>
+                <div class="card-sub">
+                    Enter the token you received by email along with your details to create your account.
+                </div>
+
+                <!-- Steps indicator -->
+                <div class="steps">
+                    <div class="step done" id="step1">
+                        <div class="step-num"><i class="ti ti-mail"></i></div>
+                        <div class="step-label">Invite sent</div>
+                    </div>
+                    <div class="step-line done"></div>
+                    <div class="step active" id="step2">
+                        <div class="step-num">2</div>
+                        <div class="step-label">Fill in details</div>
+                    </div>
+                    <div class="step-line"></div>
+                    <div class="step idle" id="step3">
+                        <div class="step-num">3</div>
+                        <div class="step-label">Account created</div>
+                    </div>
+                </div>
+
+                <div class="alert alert-success" id="reg-success">
+                    <i class="ti ti-circle-check"></i>
+                    <span id="reg-success-msg">Account created successfully! You can now log in.</span>
+                </div>
+                <div class="alert alert-error" id="reg-error">
+                    <i class="ti ti-alert-circle"></i>
+                    <span id="reg-error-msg">Registration failed. Please check your details.</span>
+                </div>
+
+                <div class="form-grid">
+
+                    <!-- Token from email -->
+                    <div class="form-group full">
+                        <label>Invitation token (from your email)</label>
+                        <input id="reg-token" placeholder="Paste the token sent to your email" type="text"/>
+                    </div>
+
+                    <!-- Personal details -->
+                    <div class="form-group">
+                        <label>First name</label>
+                        <input id="reg-firstname" placeholder="e.g. John" type="text"/>
+                    </div>
+                    <div class="form-group">
+                        <label>Last name</label>
+                        <input id="reg-lastname" placeholder="e.g. Okeke" type="text"/>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Email address</label>
+                        <input id="reg-email" placeholder="e.g. john@dangote.com" type="email"/>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input id="reg-password" placeholder="Min. 8 characters" type="password"/>
+                    </div>
+
+                    <div class="form-group">
+                        <label>NIN</label>
+                        <input id="reg-nin" maxlength="11" placeholder="11-digit NIN" type="text"/>
+                    </div>
+                    <div class="form-group">
+                        <label>Organization ID</label>
+                        <input id="reg-org-id" placeholder="Your organization's ID" type="number"/>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Role</label>
+                        <select id="reg-role">
+                            <option value="">Select your role</option>
+                            <option value="ADMIN">Admin</option>
+                            <option value="MAKER">Maker</option>
+                            <option value="APPROVER">Approver</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="reg-status">
+                            <option value="ACTIVE">Active</option>
+                            <option value="INACTIVE">Inactive</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group full">
+                        <label>Admin key</label>
+                        <input id="reg-admin-key" placeholder="Admin key provided by your organization" type="text"/>
+                    </div>
+
+                    <div class="form-actions">
+                        <button class="btn btn-primary" id="reg-btn" onclick="registerUser()">
+                            <i class="ti ti-user-check"></i> Create account
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- TAB 3: View All Users (ADMIN only)         -->
+        <!-- ══════════════════════════════════════════ -->
+        <div class="tab-panel" id="panel-viewall">
+            <div class="card">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+                    <div class="card-title">All users</div>
+                    <button class="btn btn-primary" onclick="loadUsers()" style="font-size:12px;padding:7px 14px">
+                        <i class="ti ti-refresh"></i> Refresh
+                    </button>
+                </div>
+                <div class="card-sub">All registered users in the system</div>
+
+                <div class="alert alert-error" id="users-error">
+                    <i class="ti ti-alert-circle"></i>
+                    <span id="users-error-msg">Could not load users.</span>
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>NIN</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Organization ID</th>
+                        </tr>
+                        </thead>
+                        <tbody id="users-table-body">
+                        <tr>
+                            <td colspan="6">
+                                <div class="empty">
+                                    <i class="ti ti-users"></i>
+                                    Click "All Users" tab to load users
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script>
+    const API_BASE  = 'http://localhost:1990';
+    const token     = localStorage.getItem('cib_token');
+    const userRole  = localStorage.getItem('cib_role');
+    const userName  = localStorage.getItem('cib_name');
+
+    // ── Update sidebar ──
+    function updateSidebar() {
+      if (userName) {
+        const initials = userName.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
+        document.getElementById('sidebar-name').textContent   = userName;
+        document.getElementById('sidebar-role').textContent   = userRole || 'User';
+        document.getElementById('sidebar-avatar').textContent = initials;
+        document.getElementById('topbar-avatar').textContent  = initials;
+      }
+    }
+
+    // ── Check role: only ADMIN can send invitations ──
+    // If user is not ADMIN, hide the invite form and show a message instead
+    function checkInviteAccess() {
+      if (token && userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') {
+        document.getElementById('invite-form-wrap').classList.add('hidden');
+        document.getElementById('invite-admin-only').classList.remove('hidden');
+      }
+      // Hide the "All Users" tab for non-admins
+      if (!token || (userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN')) {
+        document.getElementById('tab-viewall').classList.add('hidden');
+      }
+    }
+
+    // ── Tab switching ──
+    function switchTab(name) {
+      // Update tab buttons
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+
+      // Update panels
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById(`panel-${name}`).classList.add('active');
+
+      // Load users when switching to viewall tab
+      if (name === 'viewall') loadUsers();
+    }
+
+    // ── STEP 1: Send invitation (POST /users/invitation) ──
+    // Only ADMIN can do this
+    async function sendInvitation() {
+      const email = document.getElementById('invite-email').value.trim();
+
+      hideAlerts('invite');
+
+      if (!email) {
+        showAlert('invite', 'error', 'Please enter an email address.');
+        return;
+      }
+
+      const btn = document.getElementById('invite-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="ti ti-loader"></i> Sending...';
+
+      try {
+        const res = await fetch(`${API_BASE}/users/invitation`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`   // ADMIN token required
+          },
+          // Your InvitationRequest only needs userEmail
+          body: JSON.stringify({ userEmail: email })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          showAlert('invite', 'success', `Invitation sent to ${email} successfully!`);
+          document.getElementById('invite-email').value = '';
+        } else {
+          showAlert('invite', 'error', data.message || 'Failed to send invitation.');
+        }
+
+      } catch (e) {
+        showAlert('invite', 'error', 'Could not reach the server. Is Spring running on port 1990?');
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ti ti-send"></i> Send invitation';
+    }
+
+    // ── STEP 2: Register user with token (POST /users/create) ──
+    // Public — anyone with a valid token can register
+    async function registerUser() {
+      const token_val    = document.getElementById('reg-token').value.trim();
+      const firstName    = document.getElementById('reg-firstname').value.trim();
+      const lastName     = document.getElementById('reg-lastname').value.trim();
+      const email        = document.getElementById('reg-email').value.trim();
+      const password     = document.getElementById('reg-password').value;
+      const nin          = document.getElementById('reg-nin').value.trim();
+      const organizationId = document.getElementById('reg-org-id').value;
+      const role         = document.getElementById('reg-role').value;
+      const status       = document.getElementById('reg-status').value;
+      const adminKey     = document.getElementById('reg-admin-key').value.trim();
+
+      hideAlerts('reg');
+
+      // Validate all fields
+      if (!token_val || !firstName || !lastName || !email || !password || !nin || !organizationId || !role || !adminKey) {
+        showAlert('reg', 'error', 'Please fill in all fields including the invitation token.');
+        return;
+      }
+
+      const btn = document.getElementById('reg-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="ti ti-loader"></i> Creating account...';
+
+      try {
+        const res = await fetch(`${API_BASE}/users/create`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          // This matches your UserRegistrationRequest exactly
+          body: JSON.stringify({
+            firstName,
+            lastName,
+            email,
+            password,
+            nin,
+            adminKey,
+            organizationId: Number(organizationId),
+            role,
+            status,
+            token: token_val
+          })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          // Update the steps indicator to show completion
+          document.getElementById('step2').className = 'step done';
+          document.getElementById('step3').className = 'step done';
+          document.querySelectorAll('.step-line').forEach(l => l.classList.add('done'));
+
+          showAlert('reg', 'success', 'Account created successfully! You can now log in.');
+          clearRegForm();
+        } else {
+          showAlert('reg', 'error', data.message || 'Registration failed. Please check your details.');
+        }
+
+      } catch (e) {
+        showAlert('reg', 'error', 'Could not reach the server. Is Spring running on port 1990?');
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ti ti-user-check"></i> Create account';
+    }
+
+    // ── Load all users (GET /users/viewAll) ──
+    async function loadUsers() {
+      const tbody = document.getElementById('users-table-body');
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><i class="ti ti-loader"></i> Loading users...</div></td></tr>`;
+
+      try {
+        const res = await fetch(`${API_BASE}/users/viewAll`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.data && data.data.length > 0) {
+          renderUsersTable(data.data);
+        } else {
+          tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><i class="ti ti-users"></i> No users found.</div></td></tr>`;
+        }
+
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><i class="ti ti-wifi-off"></i> Could not load users. Is the server running?</div></td></tr>`;
+      }
+    }
+
+    // ── Render users into the table ──
+    // Uses UserResponse: userId, firstName, lastName, email, nin, organizationId, role, status
+    function renderUsersTable(users) {
+      const tbody = document.getElementById('users-table-body');
+      tbody.innerHTML = users.map(u => {
+        const pill = getStatusPill(u.status);
+        return `
+          <tr>
+            <td><strong>${u.firstName || ''} ${u.lastName || ''}</strong></td>
+            <td>${u.email || '—'}</td>
+            <td>${u.nin || '—'}</td>
+            <td><span class="pill pill-blue">${u.role || '—'}</span></td>
+            <td><span class="pill ${pill}">${u.status || '—'}</span></td>
+            <td>${u.organizationId?.id || u.organizationId || '—'}</td>
+          </tr>`;
+      }).join('');
+    }
+
+    // ── Helpers ──
+    function getStatusPill(status) {
+      const s = (status || '').toUpperCase();
+      if (s === 'ACTIVE')   return 'pill-green';
+      if (s === 'INACTIVE') return 'pill-amber';
+      if (s === 'REJECTED') return 'pill-red';
+      return 'pill-amber';
+    }
+
+    function showAlert(prefix, type, msg) {
+      const el  = document.getElementById(`${prefix}-${type}`);
+      const msg_el = document.getElementById(`${prefix}-${type}-msg`);
+      if (msg_el) msg_el.textContent = msg;
+      if (el) el.classList.add('show');
+      setTimeout(() => { if (el) el.classList.remove('show'); }, 6000);
+    }
+
+    function hideAlerts(prefix) {
+      ['success','error','info'].forEach(type => {
+        const el = document.getElementById(`${prefix}-${type}`);
+        if (el) el.classList.remove('show');
+      });
+    }
+
+    function clearRegForm() {
+      ['reg-token','reg-firstname','reg-lastname','reg-email',
+       'reg-password','reg-nin','reg-org-id','reg-admin-key'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      document.getElementById('reg-role').value = '';
+    }
+
+    // ── Run on load ──
+    updateSidebar();
+    checkInviteAccess();
+</script>
+</body>
+</html>
