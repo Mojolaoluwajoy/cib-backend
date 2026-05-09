@@ -1,5 +1,6 @@
 package org.app.corporateinternetbanking.organization.service;
 
+import lombok.RequiredArgsConstructor;
 import org.app.corporateinternetbanking.organization.domain.entity.Organization;
 import org.app.corporateinternetbanking.organization.domain.repository.OrganizationRepository;
 import org.app.corporateinternetbanking.organization.dto.*;
@@ -9,6 +10,7 @@ import org.app.corporateinternetbanking.organization.exceptions.OrganizationAlre
 import org.app.corporateinternetbanking.organization.exceptions.OrganizationDoesNotExist;
 import org.app.corporateinternetbanking.organization.utils.mapper.ApprovalMap;
 import org.app.corporateinternetbanking.organization.utils.mapper.Map;
+import org.app.corporateinternetbanking.transaction.service.PaystackService;
 import org.app.corporateinternetbanking.user.domain.entity.User;
 import org.app.corporateinternetbanking.user.domain.repository.UserRepository;
 import org.app.corporateinternetbanking.user.enums.UserStatus;
@@ -23,8 +25,10 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class OrganizationServiceImpl implements OrganizationService {
 
+    private final PaystackService paystackService;
     @Autowired
     OrganizationRepository repository;
     @Autowired
@@ -74,6 +78,10 @@ public class OrganizationServiceImpl implements OrganizationService {
         Organization savedOrganization = repository.save(organization);
         User savedUser = userRepository.save(user);
 
+        String customerCode = paystackService.createPaystackCustomer(organization);
+        organization.setPayStackCustomerCode(customerCode);
+        paystackService.createVirtualAccount(customerCode, organization);
+        repository.save(organization);
         return ApprovalMap.mapApprovalResponse(savedOrganization, savedUser);
     }
 
