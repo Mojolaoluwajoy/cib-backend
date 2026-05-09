@@ -1,10 +1,10 @@
 package org.app.corporateinternetbanking.organization.utils.mapper;
 
+import org.app.corporateinternetbanking.organization.domain.entity.Organization;
 import org.app.corporateinternetbanking.organization.dto.OrganizationId;
 import org.app.corporateinternetbanking.organization.dto.OrganizationOnlyResponse;
-import org.app.corporateinternetbanking.organization.dto.OrganizationRequest;
 import org.app.corporateinternetbanking.organization.dto.OrganizationRegistrationResponse;
-import org.app.corporateinternetbanking.organization.domain.entity.Organization;
+import org.app.corporateinternetbanking.organization.dto.OrganizationRequest;
 import org.app.corporateinternetbanking.user.domain.entity.User;
 
 import java.util.UUID;
@@ -15,6 +15,7 @@ public class Map {
 
         organization.setName(request.getName());
         organization.setRegistrationNumber(request.getRegistrationNumber());
+        organization.setOrganizationEmail(request.getOrganizationEmail());
 
         return organization;
     }
@@ -26,6 +27,7 @@ public class Map {
         response.setName(organization.getName());
         response.setRegistrationNumber(organization.getRegistrationNumber());
         response.setOrganizationStatus(organization.getOrganizationStatus());
+        response.setOrganizationEmail(organization.getOrganizationEmail());
 
         response.setUserId(user.getUserId());
         response.setFirstName(user.getFirstName());

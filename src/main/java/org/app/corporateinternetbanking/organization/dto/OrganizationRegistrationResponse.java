@@ -9,10 +9,10 @@ import org.app.corporateinternetbanking.user.enums.UserStatus;
 @Setter
 @Getter
 public class OrganizationRegistrationResponse {
-   private Long id;
+    private Long id;
     private String name;
     private String registrationNumber;
-private OrganizationStatus organizationStatus;
+    private OrganizationStatus organizationStatus;
 
 
     private String userId;
@@ -23,5 +23,5 @@ private OrganizationStatus organizationStatus;
     private OrganizationId organizationId;
     private UserRole role;
     private UserStatus status;
-
+    private String organizationEmail;
 }

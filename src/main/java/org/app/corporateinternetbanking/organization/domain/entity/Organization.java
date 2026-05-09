@@ -25,5 +25,9 @@ public class Organization {
     private List<User> users;
     @Enumerated(EnumType.STRING)
     private OrganizationStatus organizationStatus = OrganizationStatus.PENDING;
+    private String organizationEmail;
+    private String payStackCustomerCode;
+    private String virtualAccountNumber;
+    private String virtualAccountBank;
 
 }

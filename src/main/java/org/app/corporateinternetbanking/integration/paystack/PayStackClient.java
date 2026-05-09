@@ -20,5 +20,11 @@ public interface PayStackClient {
     @PostMapping("/transfer")
     java.util.Map<String, Object> initiateTransfer(Map<String, Object> body);
 
+    @PostMapping("/customer")
+    Map<String, Object> createCustomer(Map<String, Object> body);
+
+    @PostMapping("/virtual_account")
+    Map<String, Object> createVirtualAccount(Map<String, Object> body);
+
 
 }
