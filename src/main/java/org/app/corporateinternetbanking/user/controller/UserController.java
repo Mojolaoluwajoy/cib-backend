@@ -55,4 +55,6 @@ public class UserController {
         return new ResponseEntity<>(GenericResponse.success(service.viewByStatus(page, size, status), "Users found"), HttpStatus.OK);
 
     }
+
+    
 }
