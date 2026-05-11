@@ -269,6 +269,34 @@
 
         /* ── Divider ── */
         .divider { height: 1px; background: var(--border); margin: 8px 0; }
+
+        /* ── Sidebar dropdown ── */
+        .nav-dropdown { margin-bottom: 1px; }
+        .nav-dropdown-trigger {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 9px 10px; border-radius: var(--radius);
+          cursor: pointer; font-size: 13px; color: rgba(255,255,255,0.55);
+          transition: background 0.15s, color 0.15s;
+        }
+        .nav-dropdown-trigger:hover { background: rgba(255,255,255,0.07); color: #fff; }
+        .nav-dropdown-trigger.open  { background: rgba(255,255,255,0.07); color: #fff; }
+        .dropdown-arrow { font-size: 14px; transition: transform 0.2s; flex-shrink: 0; }
+        .dropdown-arrow.open { transform: rotate(180deg); }
+        .nav-dropdown-items {
+          display: none; flex-direction: column; gap: 1px;
+          padding: 4px 0 4px 12px; margin-top: 2px;
+        }
+        .nav-dropdown-items.open { display: flex; }
+        .nav-sub-item {
+          display: flex; align-items: center; gap: 9px;
+          padding: 7px 10px; border-radius: var(--radius);
+          font-size: 12px; color: rgba(255,255,255,0.45);
+          text-decoration: none;
+          transition: background 0.15s, color 0.15s;
+        }
+        .nav-sub-item:hover  { background: rgba(255,255,255,0.06); color: #fff; }
+        .nav-sub-item.active { color: #60a5fa; font-weight: 500; }
+        .nav-sub-item i { font-size: 15px; flex-shrink: 0; }
     </style>
 </head>
 <body>
@@ -295,19 +323,23 @@
         </a>
 
         <div class="nav-section">Transactions</div>
-        <a class="nav-item" href="transfers.html">
-            <i class="ti ti-arrow-left-right"></i> Transfers
-        </a>
-        <a class="nav-item" href="funding.html">
-            <i class="ti ti-cash"></i> External Funding
-        </a>
-        <a class="nav-item" href="payouts.html">
-            <i class="ti ti-send"></i> Payouts
-        </a>
-        <a class="nav-item" href="internal.html">
-            <i class="ti ti-refresh"></i> Internal Transfers
-        </a>
-
+        <div class="nav-dropdown">
+            <div class="nav-dropdown-trigger" onclick="toggleDropdown()">
+                <div style="display:flex;align-items:center;gap:10px">
+                    <i class="ti ti-arrow-left-right" style="font-size:17px;flex-shrink:0"></i>
+                    <span>Transactions</span>
+                </div>
+                <i class="ti ti-chevron-down dropdown-arrow" id="dropdown-arrow"></i>
+            </div>
+            <div class="nav-dropdown-items" id="dropdown-items">
+                <a class="nav-sub-item" href="transfers.html#internal"><i class="ti ti-refresh"></i> Internal
+                    Transfer</a>
+                <a class="nav-sub-item" href="transfers.html#payout"><i class="ti ti-send"></i> External Payout</a>
+                <a class="nav-sub-item" href="transfers.html#funding"><i class="ti ti-cash"></i> External Funding</a>
+                <a class="nav-sub-item" href="transfers.html#pending"><i class="ti ti-clock"></i> Pending Approval</a>
+                <a class="nav-sub-item" href="transfers.html#all"><i class="ti ti-list"></i> All Transactions</a>
+            </div>
+        </div>
         <div class="nav-section">System</div>
         <a class="nav-item" href="settings.html">
             <i class="ti ti-settings"></i> Settings
@@ -460,68 +492,130 @@
     }
 
     // ── Load dashboard data from your Spring API ──
+    // Each section loads independently — if one fails, others still work
     async function loadDashboard() {
-      try {
-        // Metrics — replace these endpoints with your actual Spring endpoints
-        const stats = await fetch(`${API_BASE}/api/dashboard/stats`).then(r => r.json());
-        document.getElementById('m-accounts').textContent     = stats.totalAccounts   ?? '—';
-        document.getElementById('m-transfers').textContent    = formatNGN(stats.transfersToday);
-        document.getElementById('m-onboarding').textContent   = stats.pendingOnboarding ?? '—';
-        document.getElementById('m-payouts').textContent      = formatNGN(stats.externalPayouts);
+      loadAccounts();
+      loadOrganizations();
+      loadTransactions();
+    }
 
-        document.getElementById('m-accounts-sub').textContent  = `+${stats.newAccountsThisWeek ?? 0} this week`;
-        document.getElementById('m-onboarding-sub').textContent = `${stats.needReview ?? 0} need review`;
+    // ── Load accounts (GET /accounts/all) ──
+    async function loadAccounts() {
+      try {
+        const res  = await fetch(`${API_BASE}/accounts/all`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        const accounts = data.data || [];
+
+        document.getElementById('m-accounts').textContent    = accounts.length || '—';
+        document.getElementById('m-accounts-sub').textContent = `${accounts.length} total accounts`;
 
       } catch (e) {
-        // API not connected yet — show placeholder values for now
-        document.getElementById('m-accounts').textContent     = '1,284';
-        document.getElementById('m-transfers').textContent    = '₦4.2B';
-        document.getElementById('m-onboarding').textContent   = '37';
-        document.getElementById('m-payouts').textContent      = '₦820M';
-        document.getElementById('m-accounts-sub').textContent  = '+12 this week';
-        document.getElementById('m-onboarding-sub').textContent = '5 need review';
+        // API not running yet — show sample data
+        document.getElementById('m-accounts').textContent    = '—';
+        document.getElementById('m-accounts-sub').textContent = 'Connect API to load';
       }
+    }
 
-      // Recent transactions
+    // ── Load organizations (GET /organizations/viewAll) ──
+    // Used to show pending onboarding count
+    async function loadOrganizations() {
       try {
-        const txns = await fetch(`${API_BASE}/api/transactions/recent`).then(r => r.json());
-        renderTransactions(txns);
-      } catch (e) {
-        renderTransactions(sampleTransactions());
-      }
+        const res  = await fetch(`${API_BASE}/organizations/viewAll`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        const orgs = data.data || [];
 
-      // Onboarding list
-      try {
-        const clients = await fetch(`${API_BASE}/api/onboarding/recent`).then(r => r.json());
-        renderOnboarding(clients);
+        // Count pending orgs
+        const pending = orgs.filter(o =>
+          (o.organizationStatus || '').toUpperCase() === 'PENDING'
+        ).length;
+
+        document.getElementById('m-onboarding').textContent    = pending;
+        document.getElementById('m-onboarding-sub').textContent = `${pending} awaiting approval`;
+
+        // Show recent orgs in the onboarding list
+        renderOnboarding(orgs.slice(0, 4));
+
       } catch (e) {
+        document.getElementById('m-onboarding').textContent    = '—';
+        document.getElementById('m-onboarding-sub').textContent = 'Connect API to load';
         renderOnboarding(sampleClients());
       }
     }
 
+    // ── Load transactions (GET /transactions/transactions) ──
+    async function loadTransactions() {
+      try {
+        const res  = await fetch(`${API_BASE}/transactions/transactions?page=0&size=20`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        const list = data.data?.content || data.data || [];
+
+        // Total transfer amount today
+        const today = new Date().toDateString();
+        const todayTxns = list.filter(t => {
+          const d = t.createdAt ? new Date(t.createdAt).toDateString() : '';
+          return d === today;
+        });
+        const totalToday = todayTxns.reduce((sum, t) => sum + (t.amount || 0), 0);
+
+        // External payouts
+        const payouts = list.filter(t =>
+          (t.type || '').toUpperCase() === 'EXTERNAL_PAYOUT'
+        );
+        const totalPayouts = payouts.reduce((sum, t) => sum + (t.amount || 0), 0);
+
+        document.getElementById('m-transfers').textContent    = formatNGN(totalToday) || '—';
+        document.getElementById('m-transfers-sub').textContent = `${todayTxns.length} transactions today`;
+        document.getElementById('m-payouts').textContent      = formatNGN(totalPayouts) || '—';
+        document.getElementById('m-payouts-sub').textContent  = `${payouts.length} total payouts`;
+
+        // Show recent transactions list
+        renderTransactions(list.slice(0, 4));
+
+      } catch (e) {
+        document.getElementById('m-transfers').textContent    = '—';
+        document.getElementById('m-transfers-sub').textContent = 'Connect API to load';
+        document.getElementById('m-payouts').textContent      = '—';
+        document.getElementById('m-payouts-sub').textContent  = 'Connect API to load';
+        renderTransactions(sampleTransactions());
+      }
+    }
+
     // ── Render transactions ──
+    // Uses TransactionResponse: id, sourceAccount, destinationAccount,
+    // amount, type, status, transactionReference, creator
     function renderTransactions(txns) {
       const list = document.getElementById('txn-list');
+      if (!txns || txns.length === 0) {
+        list.innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">No transactions yet</div>`;
+        return;
+      }
       list.innerHTML = txns.slice(0, 4).map(t => {
-        const isCredit = t.type === 'CREDIT' || t.amount > 0;
+        const isCredit  = (t.type || '').toUpperCase() === 'EXTERNAL_FUNDING';
         const iconColor = isCredit ? 'var(--green-bg)' : 'var(--blue-bg)';
-        const iconClass = isCredit ? 'ti-arrow-down' : 'ti-arrow-up';
-        const iconFill  = isCredit ? 'var(--green)' : 'var(--blue)';
+        const iconClass = isCredit ? 'ti-arrow-down'  : 'ti-arrow-up';
+        const iconFill  = isCredit ? 'var(--green)'   : 'var(--blue)';
         const amtClass  = isCredit ? 'up' : 'down';
         const prefix    = isCredit ? '+' : '-';
+        const source    = t.sourceAccount?.accountNumber || t.transactionReference || '—';
         return `
           <div class="txn-item">
             <div class="txn-icon" style="background:${iconColor}">
               <i class="ti ${iconClass}" style="color:${iconFill}"></i>
             </div>
             <div class="txn-info">
-              <div class="txn-name">${t.description || t.name}</div>
-              <div class="txn-meta">${t.channel || t.type} · ${t.time || ''}</div>
+              <div class="txn-name">${source}</div>
+              <div class="txn-meta">${t.type || '—'}</div>
             </div>
             <div class="txn-right">
-              <div class="txn-amount ${amtClass}">${prefix}${formatNGN(Math.abs(t.amount))}</div>
+              <div class="txn-amount ${amtClass}">${prefix}${formatNGN(Math.abs(t.amount || 0))}</div>
               <div class="txn-status">
-                <span class="pill ${statusPill(t.status)}">${t.status || 'Completed'}</span>
+                <span class="pill ${statusPill(t.status)}">${t.status || '—'}</span>
               </div>
             </div>
           </div>`;
@@ -529,18 +623,24 @@
     }
 
     // ── Render onboarding ──
+    // Uses OrganizationOnlyResponse: id, name, registrationNumber, organizationStatus
     function renderOnboarding(clients) {
       const list = document.getElementById('ob-list');
+      if (!clients || clients.length === 0) {
+        list.innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">No organizations yet</div>`;
+        return;
+      }
       list.innerHTML = clients.slice(0, 4).map(c => {
-        const initials = (c.name || 'CL').split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
+        const initials = (c.name || 'OR').split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
+        const pill     = statusPill(c.organizationStatus);
         return `
           <div class="ob-item">
             <div class="ob-av">${initials}</div>
             <div style="flex:1">
-              <div class="ob-name">${c.name}</div>
-              <div class="ob-date">Submitted ${c.submittedDate || c.createdAt || '—'}</div>
+              <div class="ob-name">${c.name || '—'}</div>
+              <div class="ob-date">Reg: ${c.registrationNumber || '—'}</div>
             </div>
-            <span class="pill ${statusPill(c.status)}">${c.status || 'Pending'}</span>
+            <span class="pill ${pill}">${c.organizationStatus || 'PENDING'}</span>
           </div>`;
       }).join('');
     }
@@ -548,10 +648,10 @@
     // ── Status pill helper ──
     function statusPill(status) {
       const s = (status || '').toUpperCase();
-      if (s === 'APPROVED' || s === 'COMPLETED' || s === 'SUCCESS') return 'pill-green';
-      if (s === 'PENDING'  || s === 'PENDING_DOCS')                 return 'pill-amber';
-      if (s === 'IN_REVIEW'|| s === 'REVIEW')                       return 'pill-blue';
-      if (s === 'FAILED'   || s === 'REJECTED')                     return 'pill-red';
+      if (s === 'APPROVED' || s === 'COMPLETED' || s === 'SUCCESS' || s === 'ACTIVE') return 'pill-green';
+      if (s === 'PENDING')                                                              return 'pill-amber';
+      if (s === 'IN_REVIEW' || s === 'REVIEW')                                         return 'pill-blue';
+      if (s === 'FAILED' || s === 'REJECTED')                                           return 'pill-red';
       return 'pill-amber';
     }
 
@@ -572,6 +672,39 @@
         { name:'NextGen Holdings',   submittedDate:'May 7',  status:'PENDING'   },
         { name:'Conoil Plc',         submittedDate:'May 6',  status:'APPROVED'  },
       ];
+    }
+
+
+    // ── Sidebar dropdown toggle ──
+    function toggleDropdown() {
+      const items  = document.getElementById('dropdown-items');
+      const arrow  = document.getElementById('dropdown-arrow');
+      const trigger = document.querySelector('.nav-dropdown-trigger');
+      items.classList.toggle('open');
+      arrow.classList.toggle('open');
+      trigger.classList.toggle('open');
+    }
+
+    // ── Auto-open dropdown if on transfers page ──
+    // Also highlight the correct sub-item based on URL hash
+    function initDropdown() {
+      const hash = window.location.hash.replace('#','');
+      const isTransfers = window.location.pathname.includes('transfers');
+      if (isTransfers || hash) {
+        // open dropdown
+        const items   = document.getElementById('dropdown-items');
+        const arrow   = document.getElementById('dropdown-arrow');
+        const trigger = document.querySelector('.nav-dropdown-trigger');
+        if (items)   items.classList.add('open');
+        if (arrow)   arrow.classList.add('open');
+        if (trigger) trigger.classList.add('open');
+        // highlight active sub-item
+        if (hash) {
+          document.querySelectorAll('.nav-sub-item').forEach(a => {
+            if (a.href.includes('#' + hash)) a.classList.add('active');
+          });
+        }
+      }
     }
 
     // ── Run on load ──

@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>CIB Platform — Transactions</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" rel="stylesheet"/>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+          --bg:        #f4f5f7;
+          --surface:   #ffffff;
+          --border:    #e4e6eb;
+          --text:      #111827;
+          --muted:     #6b7280;
+          --hint:      #9ca3af;
+          --blue:      #1a56db;
+          --blue-bg:   #eff6ff;
+          --blue-text: #1e40af;
+          --green:     #0f9f6e;
+          --green-bg:  #ecfdf5;
+          --green-text:#065f46;
+          --amber:     #d97706;
+          --amber-bg:  #fffbeb;
+          --amber-text:#92400e;
+          --red:       #e02424;
+          --red-bg:    #fef2f2;
+          --red-text:  #991b1b;
+          --navy:      #0f172a;
+          --radius:    8px;
+          --radius-lg: 12px;
+        }
+
+        body {
+          font-family: 'DM Sans', sans-serif;
+          background: var(--bg); color: var(--text);
+          font-size: 14px; min-height: 100vh; display: flex;
+        }
+
+        /* ── Sidebar ── */
+        .sidebar {
+          width: 220px; flex-shrink: 0; background: var(--navy);
+          display: flex; flex-direction: column;
+          min-height: 100vh; position: fixed; top: 0; left: 0; bottom: 0;
+        }
+        .sidebar-logo { padding: 24px 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .logo-name { font-size: 16px; font-weight: 600; color: #fff; letter-spacing: -0.3px; }
+        .logo-tag  { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+        .nav { padding: 16px 12px; flex: 1; }
+        .nav-section {
+          font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.3);
+          text-transform: uppercase; letter-spacing: 0.8px; padding: 12px 8px 4px;
+        }
+        .nav-item {
+          display: flex; align-items: center; gap: 10px;
+          padding: 9px 10px; border-radius: var(--radius);
+          cursor: pointer; font-size: 13px; color: rgba(255,255,255,0.55);
+          text-decoration: none; transition: background 0.15s, color 0.15s; margin-bottom: 1px;
+        }
+        .nav-item:hover  { background: rgba(255,255,255,0.07); color: #fff; }
+        .nav-item.active { background: var(--blue); color: #fff; }
+        .nav-item i { font-size: 17px; flex-shrink: 0; }
+        .sidebar-footer { padding: 16px 12px; border-top: 1px solid rgba(255,255,255,0.08); }
+        .user-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; }
+        .avatar {
+          width: 32px; height: 32px; border-radius: 50%; background: var(--blue);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 12px; font-weight: 600; color: #fff; flex-shrink: 0;
+        }
+        .user-name { font-size: 13px; color: rgba(255,255,255,0.8); font-weight: 500; }
+        .user-role { font-size: 11px; color: rgba(255,255,255,0.35); }
+
+        /* ── Main ── */
+        .main { margin-left: 220px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+        /* ── Topbar ── */
+        .topbar {
+          background: var(--surface); border-bottom: 1px solid var(--border);
+          padding: 0 28px; height: 60px;
+          display: flex; align-items: center; justify-content: space-between;
+          position: sticky; top: 0; z-index: 10;
+        }
+        .page-title { font-size: 15px; font-weight: 600; }
+        .page-sub   { font-size: 12px; color: var(--muted); margin-top: 1px; }
+        .icon-btn {
+          background: none; border: none; cursor: pointer; color: var(--muted); font-size: 20px;
+          display: flex; align-items: center; justify-content: center;
+          padding: 4px; border-radius: var(--radius);
+        }
+        .icon-btn:hover { background: var(--bg); }
+
+        /* ── Content ── */
+        .content { padding: 28px; flex: 1; display: flex; flex-direction: column; gap: 24px; }
+
+        /* ── Tabs ── */
+        .tabs {
+          display: flex; gap: 4px; background: var(--surface);
+          border: 1px solid var(--border); border-radius: var(--radius-lg);
+          padding: 6px; width: fit-content; flex-wrap: wrap;
+        }
+        .tab {
+          padding: 8px 16px; border-radius: var(--radius);
+          font-size: 13px; font-weight: 500; cursor: pointer; border: none;
+          background: none; color: var(--muted); font-family: 'DM Sans', sans-serif;
+          transition: background 0.15s, color 0.15s;
+          display: flex; align-items: center; gap: 7px;
+        }
+        .tab:hover  { color: var(--text); background: var(--bg); }
+        .tab.active { background: var(--blue); color: #fff; }
+        .tab i { font-size: 15px; }
+
+        /* ── Tab panels ── */
+        .tab-panel { display: none; flex-direction: column; gap: 24px; }
+        .tab-panel.active { display: flex; }
+
+        /* ── Role notice ── */
+        .role-notice {
+          background: var(--amber-bg); border: 1px solid #fcd34d;
+          border-radius: var(--radius); padding: 12px 16px;
+          font-size: 13px; color: var(--amber-text);
+          display: flex; align-items: center; gap: 10px; margin-bottom: 20px;
+        }
+        .role-notice i { font-size: 17px; flex-shrink: 0; }
+
+        /* ── Info box ── */
+        .info-box {
+          background: var(--blue-bg); border: 1px solid #bfdbfe;
+          border-radius: var(--radius); padding: 12px 16px;
+          font-size: 13px; color: var(--blue-text);
+          display: flex; gap: 10px; align-items: flex-start; margin-bottom: 20px;
+        }
+        .info-box i { font-size: 17px; flex-shrink: 0; margin-top: 1px; }
+
+        /* ── Cards ── */
+        .card {
+          background: var(--surface); border: 1px solid var(--border);
+          border-radius: var(--radius-lg); padding: 24px;
+        }
+        .card-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+        .card-sub   { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+
+        /* ── Form ── */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group.full { grid-column: 1 / -1; }
+        label {
+          font-size: 12px; font-weight: 600; color: var(--muted);
+          text-transform: uppercase; letter-spacing: 0.4px;
+        }
+        input, select {
+          width: 100%; padding: 10px 12px;
+          border: 1px solid var(--border); border-radius: var(--radius);
+          font-size: 14px; font-family: 'DM Sans', sans-serif;
+          color: var(--text); background: var(--surface);
+          outline: none; transition: border-color 0.15s;
+        }
+        input:focus, select:focus {
+          border-color: var(--blue); box-shadow: 0 0 0 3px rgba(26,86,219,0.1);
+        }
+        input::placeholder { color: var(--hint); }
+        .form-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; margin-top: 8px; }
+        .hint { font-size: 11px; color: var(--hint); margin-top: 2px; }
+
+        /* ── Buttons ── */
+        .btn {
+          padding: 10px 22px; border-radius: var(--radius);
+          font-size: 14px; font-weight: 500; font-family: 'DM Sans', sans-serif;
+          cursor: pointer; border: none;
+          display: inline-flex; align-items: center; gap: 8px; transition: opacity 0.15s;
+        }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-primary { background: var(--blue);  color: #fff; }
+        .btn-success { background: var(--green); color: #fff; font-size: 12px; padding: 6px 14px; }
+        .btn-danger  { background: var(--red);   color: #fff; font-size: 12px; padding: 6px 14px; }
+        .btn-amber   { background: var(--amber); color: #fff; }
+        .btn-primary:hover:not(:disabled) { opacity: 0.9; }
+        .btn-success:hover:not(:disabled) { opacity: 0.85; }
+        .btn-danger:hover:not(:disabled)  { opacity: 0.85; }
+        .btn-amber:hover:not(:disabled)   { opacity: 0.9; }
+        .btn-sm { font-size: 12px; padding: 7px 14px; }
+
+        /* ── Alert ── */
+        .alert {
+          padding: 12px 16px; border-radius: var(--radius);
+          font-size: 13px; font-weight: 500;
+          display: none; align-items: center; gap: 10px; margin-bottom: 16px;
+        }
+        .alert.show    { display: flex; }
+        .alert-success { background: var(--green-bg); color: var(--green-text); }
+        .alert-error   { background: var(--red-bg);   color: var(--red-text); }
+
+        /* ── Flow diagram ── */
+        .flow {
+          display: flex; align-items: center;
+          background: var(--bg); border-radius: var(--radius);
+          padding: 14px 20px; margin-bottom: 20px;
+          flex-wrap: wrap; gap: 8px;
+        }
+        .flow-step { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 500; color: var(--muted); }
+        .flow-step.active { color: var(--blue); }
+        .flow-num {
+          width: 24px; height: 24px; border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 11px; font-weight: 600; flex-shrink: 0;
+          background: var(--border); color: var(--muted);
+        }
+        .flow-step.active .flow-num { background: var(--blue); color: #fff; }
+        .flow-arrow { color: var(--hint); font-size: 16px; }
+
+        /* ── Table ── */
+        .table-wrapper { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        thead tr { border-bottom: 2px solid var(--border); }
+        th {
+          text-align: left; padding: 10px 12px;
+          font-size: 11px; font-weight: 600; color: var(--muted);
+          text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        td { padding: 12px; border-bottom: 1px solid var(--border); }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: var(--bg); }
+
+        /* ── Pills ── */
+        .pill { font-size: 10px; font-weight: 600; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+        .pill-green  { background: var(--green-bg); color: var(--green-text); }
+        .pill-amber  { background: var(--amber-bg); color: var(--amber-text); }
+        .pill-blue   { background: var(--blue-bg);  color: var(--blue-text); }
+        .pill-red    { background: var(--red-bg);   color: var(--red-text); }
+        .pill-purple { background: #f3e8ff;          color: #7e22ce; }
+
+        /* ── Empty ── */
+        .empty { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 13px; }
+        .empty i { font-size: 36px; display: block; margin-bottom: 10px; color: var(--hint); }
+
+        /* ── Modal ── */
+        .modal-overlay {
+          display: none; position: fixed; inset: 0;
+          background: rgba(0,0,0,0.45); z-index: 100;
+          align-items: center; justify-content: center;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+          background: var(--surface); border-radius: var(--radius-lg);
+          padding: 28px; width: 100%; max-width: 440px;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+        .modal-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+        .modal-sub   { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+        .modal-detail-row {
+          display: flex; justify-content: space-between; align-items: center;
+          padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px;
+        }
+        .modal-detail-row:last-child { border-bottom: none; }
+        .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
+        .btn-ghost {
+          background: var(--bg); border: 1px solid var(--border);
+          color: var(--text); padding: 9px 18px; border-radius: var(--radius);
+          font-size: 14px; font-family: 'DM Sans', sans-serif; cursor: pointer; font-weight: 500;
+        }
+        .btn-ghost:hover { background: var(--border); }
+
+        /* ── Testing tools card ── */
+        .testing-card {
+          border: 2px dashed var(--amber) !important;
+          background: var(--amber-bg) !important;
+        }
+        .testing-badge {
+          font-size: 10px; font-weight: 600;
+          background: var(--amber); color: #fff;
+          padding: 2px 8px; border-radius: 20px;
+        }
+
+        /* ── Sidebar dropdown ── */
+        .nav-dropdown { margin-bottom: 1px; }
+        .nav-dropdown-trigger {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 9px 10px; border-radius: var(--radius);
+          cursor: pointer; font-size: 13px; color: rgba(255,255,255,0.55);
+          transition: background 0.15s, color 0.15s;
+        }
+        .nav-dropdown-trigger:hover { background: rgba(255,255,255,0.07); color: #fff; }
+        .nav-dropdown-trigger.open  { background: rgba(255,255,255,0.07); color: #fff; }
+        .dropdown-arrow { font-size: 14px; transition: transform 0.2s; flex-shrink: 0; }
+        .dropdown-arrow.open { transform: rotate(180deg); }
+        .nav-dropdown-items {
+          display: none; flex-direction: column; gap: 1px;
+          padding: 4px 0 4px 12px; margin-top: 2px;
+        }
+        .nav-dropdown-items.open { display: flex; }
+        .nav-sub-item {
+          display: flex; align-items: center; gap: 9px;
+          padding: 7px 10px; border-radius: var(--radius);
+          font-size: 12px; color: rgba(255,255,255,0.45);
+          text-decoration: none;
+          transition: background 0.15s, color 0.15s;
+        }
+        .nav-sub-item:hover  { background: rgba(255,255,255,0.06); color: #fff; }
+        .nav-sub-item.active { color: #60a5fa; font-weight: 500; }
+        .nav-sub-item i { font-size: 15px; flex-shrink: 0; }
+    </style>
+</head>
+<body>
+
+<!-- ═══════════════ SIDEBAR ═══════════════ -->
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        <div class="logo-name">CIB Platform</div>
+        <div class="logo-tag">Corporate Internet Banking</div>
+    </div>
+    <nav class="nav">
+        <div class="nav-section">Overview</div>
+        <a class="nav-item" href="index.html"><i class="ti ti-layout-dashboard"></i> Dashboard</a>
+        <div class="nav-section">Clients</div>
+        <a class="nav-item" href="org-onboarding.html"><i class="ti ti-building"></i> Org Onboarding</a>
+        <a class="nav-item" href="user-onboarding.html"><i class="ti ti-user-plus"></i> User Onboarding</a>
+        <a class="nav-item" href="accounts.html"><i class="ti ti-building-bank"></i> Accounts</a>
+        <div class="nav-section">Transactions</div>
+        <div class="nav-dropdown">
+            <div class="nav-dropdown-trigger" onclick="toggleDropdown()">
+                <div style="display:flex;align-items:center;gap:10px">
+                    <i class="ti ti-arrow-left-right" style="font-size:17px;flex-shrink:0"></i>
+                    <span>Transactions</span>
+                </div>
+                <i class="ti ti-chevron-down dropdown-arrow" id="dropdown-arrow"></i>
+            </div>
+            <div class="nav-dropdown-items" id="dropdown-items">
+                <a class="nav-sub-item" href="transfers.html#internal"><i class="ti ti-refresh"></i> Internal
+                    Transfer</a>
+                <a class="nav-sub-item" href="transfers.html#payout"><i class="ti ti-send"></i> External Payout</a>
+                <a class="nav-sub-item" href="transfers.html#funding"><i class="ti ti-cash"></i> External Funding</a>
+                <a class="nav-sub-item" href="transfers.html#pending"><i class="ti ti-clock"></i> Pending Approval</a>
+                <a class="nav-sub-item" href="transfers.html#all"><i class="ti ti-list"></i> All Transactions</a>
+            </div>
+        </div>
+        <div class="nav-section">System</div>
+        <a class="nav-item" href="settings.html"><i class="ti ti-settings"></i> Settings</a>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="user-row">
+            <div class="avatar" id="sidebar-avatar">?</div>
+            <div>
+                <div class="user-name" id="sidebar-name">Guest</div>
+                <div class="user-role" id="sidebar-role">Not logged in</div>
+            </div>
+        </div>
+    </div>
+</aside>
+
+<!-- ═══════════════ MAIN ═══════════════ -->
+<div class="main">
+    <header class="topbar">
+        <div>
+            <div class="page-title">Transactions</div>
+            <div class="page-sub">Internal transfers, external payouts, funding and approvals</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+            <button class="icon-btn"><i class="ti ti-bell"></i></button>
+            <div class="avatar" id="topbar-avatar">?</div>
+        </div>
+    </header>
+
+    <main class="content">
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab(event,'internal')">
+                <i class="ti ti-refresh"></i> Internal Transfer
+            </button>
+            <button class="tab" onclick="switchTab(event,'payout')">
+                <i class="ti ti-send"></i> External Payout
+            </button>
+            <button class="tab" onclick="switchTab(event,'funding')">
+                <i class="ti ti-cash"></i> External Funding
+            </button>
+            <button class="tab" onclick="switchTab(event,'pending')">
+                <i class="ti ti-clock"></i> Pending Approval
+            </button>
+            <button class="tab" onclick="switchTab(event,'all')">
+                <i class="ti ti-list"></i> All Transactions
+            </button>
+        </div>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- TAB 1: Internal Transfer (MAKER only)      -->
+        <!-- ══════════════════════════════════════════ -->
+        <div class="tab-panel active" id="panel-internal">
+            <div class="card">
+                <div class="card-title">Initiate internal transfer</div>
+                <div class="card-sub">Transfer funds between accounts within the system. MAKER role required.</div>
+
+                <div class="flow">
+                    <div class="flow-step active">
+                        <div class="flow-num">1</div>
+                        <span>Maker initiates</span></div>
+                    <i class="ti ti-chevron-right flow-arrow"></i>
+                    <div class="flow-step">
+                        <div class="flow-num">2</div>
+                        <span>Approver reviews</span></div>
+                    <i class="ti ti-chevron-right flow-arrow"></i>
+                    <div class="flow-step">
+                        <div class="flow-num">3</div>
+                        <span>Transfer complete</span></div>
+                </div>
+
+                <div class="role-notice" id="internal-maker-notice" style="display:none">
+                    <i class="ti ti-lock"></i> Only <strong>MAKER</strong> users can initiate transfers.
+                </div>
+
+                <div class="alert alert-success" id="internal-success">
+                    <i class="ti ti-circle-check"></i>
+                    <span id="internal-success-msg">Transfer initiated! Waiting for approver.</span>
+                </div>
+                <div class="alert alert-error" id="internal-error">
+                    <i class="ti ti-alert-circle"></i>
+                    <span id="internal-error-msg">Transfer failed.</span>
+                </div>
+
+                <div class="form-grid" id="internal-form">
+                    <div class="form-group">
+                        <label>Source account number</label>
+                        <input id="int-source" placeholder="e.g. 1234567890" type="text"/>
+                    </div>
+                    <div class="form-group">
+                        <label>Destination account number</label>
+                        <input id="int-dest" placeholder="e.g. 0987654321" type="text"/>
+                    </div>
+                    <div class="form-group">
+                        <label>Amount</label>
+                        <input id="int-amount" min="0" placeholder="e.g. 500000" type="number"/>
+                    </div>
+                    <div class="form-group">
+                        <label>Idempotency key</label>
+                        <input id="int-idem" placeholder="e.g. TXN-20240510-001" type="text"/>
+                        <span class="hint">A unique value per transaction to prevent duplicates</span>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn btn-primary" id="internal-btn" onclick="initiateInternalTransfer()">
+                            <i class="ti ti-arrow-right"></i> Initiate transfer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- TAB 2: External Payout (MAKER only)        -->
+        <!-- ══════════════════════════════════════════ -->
+        <div class="tab-panel" id="panel-payout">
+            <div class="card">
+                <div class="card-title">Initiate external payout</div>
+                <div class="card-sub">Send funds to an external bank account via Paystack. MAKER role required.</div>
+
+                <div class="flow">
+                    <div class="flow-step active">
+                        <div class="flow-num">1</div>
+                        <span>Maker initiates</span></div>
+                    <i class="ti ti-chevron-right flow-arrow"></i>
+                    <div class="flow-step">
+                        <div class="flow-num">2</div>
+                        <span>Approver reviews</span></div>
+                    <i class="ti ti-chevron-right flow-arrow"></i>
+                    <div class="flow-step">
+                        <div class="flow-num">3</div>
+                        <span>Paystack confirms</span></div>
+                    <i class="ti ti-chevron-right flow-arrow"></i>
+                    <div class="flow-step">
+                        <div class="flow-num">4</div>
+                        <span>Transfer complete</span></div>
+                </div>
+
+                <div class="info-box">
+                    <i class="ti ti-info-circle"></i>
+                    <span>After approval this payout stays <strong>Pending</strong> until Paystack confirms
+            via webhook. Use the Testing Tools in the Pending Approval tab to simulate this during development.</span>
+                </div>
+
+                <div class="role-notice" id="payout-maker-notice" style="display:none">
+                    <i class="ti ti-lock"></i> Only <strong>MAKER</strong> users can initiate payouts.
+                </div>
+
+                <div class="alert alert-success" id="payout-success">
+                    <i class="ti ti-circle-check"></i>
+                    <span id="payout-success-msg">Payout initiated! Waiting for approver.</span>
+                </div>
+                <div class="alert alert-error" id="payout-error">
+                    <i class="ti ti-alert-circle"></i>
+                    <span id="payout-error-msg">Payout failed.</span>
+                </div>
+
+                <div class="form-grid" id="payout-form">
+                    <div class="form-group">
+                        <label>Source account number</label>
+                        <input id="pay-source" placeholder="Internal account to debit" type="text"/>
+                    </div>
+                    <div class="form-group">
+                        <label>Amount</label>
+                        <input id="pay-amount" min="0" placeholder="e.g. 250000" type="number"/>
+                    </div>
+                    <div class="form-group">
+                        <label>Recipient account number</label>
+                        <input id="pay-accnum" placeholder="Recipient's bank account number" type="text"/>
+                    </div>
+                    <div class="form-group">
+                        <label>Bank code</label>
+                        <input id="pay-bankcode" placeholder="e.g. 044 for Access Bank" type="text"/>
+                    </div>
+                    <div class="form-group">
+                        <label>Bank name</label>
+                        <input id="pay-bankname" placeholder="e.g. Access Bank" type="text"/>
+                    </div>
+                    <div class="form-group">
+                        <label>Account name</label>
+                        <input id="pay-accname" placeholder="Recipient's full name" type="text"/>
+                    </div>
+                    <div class="form-group full">
+                        <label>Idempotency key</label>
+                        <input id="pay-idem" placeholder="e.g. PAY-20240510-001" type="text"/>
+                        <span class="hint">A unique value per transaction to prevent duplicates</span>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn btn-primary" id="payout-btn" onclick="initiateExternalPayout()">
+                            <i class="ti ti-send"></i> Initiate payout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- TAB 3: External Funding (Public)           -->
+        <!-- ══════════════════════════════════════════ -->
+        <div class="tab-panel" id="panel-funding">
+            <div class="card">
+                <div class="card-title">External funding</div>
+                <div class="card-sub">Fund a system account from an external source via Paystack.</div>
+
+                <div class="flow">
+                    <div class="flow-step active">
+                        <div class="flow-num">1</div>
+                        <span>Submit funding request</span></div>
+                    <i class="ti ti-chevron-right flow-arrow"></i>
+                    <div class="flow-step">
+                        <div class="flow-num">2</div>
+                        <span>Paystack processes</span></div>
+                    <i class="ti ti-chevron-right flow-arrow"></i>
+                    <div class="flow-step">
+                        <div class="flow-num">3</div>
+                        <span>Account credited</span></div>
+                </div>
+
+                <div class="info-box">
+                    <i class="ti ti-info-circle"></i>
+                    <span>This initiates a funding request through Paystack. The account will be credited
+            once Paystack confirms the payment. You will receive a response with a payment link or reference.</span>
+                </div>
+
+                <div class="alert alert-success" id="funding-success">
+                    <i class="ti ti-circle-check"></i>
+                    <span id="funding-success-msg">Funding initiated successfully!</span>
+                </div>
+                <div class="alert alert-error" id="funding-error">
+                    <i class="ti ti-alert-circle"></i>
+                    <span id="funding-error-msg">Funding request failed.</span>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Source account number</label>
+                        <input id="fund-source" placeholder="Account to credit" type="text"/>
+                    </div>
+                    <div class="form-group">
+                        <label>Amount</label>
+                        <input id="fund-amount" min="0" placeholder="e.g. 1000000" type="number"/>
+                    </div>
+                    <div class="form-group">
+                        <label>Email address</label>
+                        <input id="fund-email" placeholder="e.g. payer@company.com" type="email"/>
+                        <span class="hint">Used by Paystack to send payment confirmation</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Idempotency key</label>
+                        <input id="fund-idem" placeholder="e.g. FUND-20240510-001" type="text"/>
+                        <span class="hint">A unique value per transaction to prevent duplicates</span>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn btn-primary" id="funding-btn" onclick="initiateExternalFunding()">
+                            <i class="ti ti-cash"></i> Initiate funding
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- TAB 4: Pending Approval (APPROVER only)    -->
+        <!-- ══════════════════════════════════════════ -->
+        <div class="tab-panel" id="panel-pending">
+
+            <div class="card">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+                    <div class="card-title">Pending transactions</div>
+                    <button class="btn btn-primary btn-sm" onclick="loadPendingTransactions()">
+                        <i class="ti ti-refresh"></i> Refresh
+                    </button>
+                </div>
+                <div class="card-sub">Transactions waiting for your approval. APPROVER role required.</div>
+
+                <div class="role-notice" id="approver-notice" style="display:none">
+                    <i class="ti ti-lock"></i> Only <strong>APPROVER</strong> users can approve or reject transactions.
+                </div>
+
+                <div class="alert alert-success" id="pending-success">
+                    <i class="ti ti-circle-check"></i>
+                    <span id="pending-success-msg">Transaction processed successfully!</span>
+                </div>
+                <div class="alert alert-error" id="pending-error">
+                    <i class="ti ti-alert-circle"></i>
+                    <span id="pending-error-msg">Could not process transaction.</span>
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>Reference</th>
+                            <th>Type</th>
+                            <th>Source</th>
+                            <th>Destination</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                        </thead>
+                        <tbody id="pending-table-body">
+                        <tr>
+                            <td colspan="7">
+                                <div class="empty">
+                                    <i class="ti ti-clock"></i> Click refresh to load pending transactions
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ⚠️ Testing Tools -->
+            <div class="card testing-card">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+                    <i class="ti ti-flask" style="font-size:18px;color:var(--amber)"></i>
+                    <div class="card-title" style="color:var(--amber-text);margin-bottom:0">Testing Tools</div>
+                    <span class="testing-badge">DEV ONLY</span>
+                </div>
+                <div class="card-sub" style="color:var(--amber-text);opacity:0.85">
+                    Simulate a Paystack webhook call to test the full external payout flow.
+                    Paystack cannot reach your localhost during development, so use this to manually
+                    trigger the webhook. <strong>Remove this section before going live.</strong>
+                </div>
+
+                <div class="alert alert-success" id="webhook-success">
+                    <i class="ti ti-circle-check"></i>
+                    <span id="webhook-success-msg">Webhook simulated successfully!</span>
+                </div>
+                <div class="alert alert-error" id="webhook-error">
+                    <i class="ti ti-alert-circle"></i>
+                    <span id="webhook-error-msg">Webhook simulation failed.</span>
+                </div>
+
+                <div class="form-grid" style="max-width:600px">
+                    <div class="form-group">
+                        <label>Transaction reference</label>
+                        <input id="webhook-ref" placeholder="Paste the reference from the approved payout"
+                               type="text"/>
+                        <span class="hint">Get this from the payout response or the All Transactions table</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Simulate event</label>
+                        <select id="webhook-event">
+                            <option value="transfer.success">transfer.success — payout succeeded</option>
+                            <option value="transfer.failed">transfer.failed — payout failed</option>
+                            <option value="transfer.reversed">transfer.reversed — payout reversed</option>
+                        </select>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn btn-amber" id="webhook-btn" onclick="simulateWebhook()">
+                            <i class="ti ti-player-play"></i> Simulate Paystack webhook
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- TAB 5: All Transactions (ADMIN only)       -->
+        <!-- ══════════════════════════════════════════ -->
+        <div class="tab-panel" id="panel-all">
+            <div class="card">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+                    <div class="card-title">All transactions</div>
+                    <button class="btn btn-primary btn-sm" onclick="loadAllTransactions()">
+                        <i class="ti ti-refresh"></i> Refresh
+                    </button>
+                </div>
+                <div class="card-sub">Full transaction history. ADMIN role required.</div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>Reference</th>
+                            <th>Type</th>
+                            <th>Source</th>
+                            <th>Destination</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Creator</th>
+                        </tr>
+                        </thead>
+                        <tbody id="all-table-body">
+                        <tr>
+                            <td colspan="7">
+                                <div class="empty">
+                                    <i class="ti ti-list"></i> Click refresh to load all transactions
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<!-- ═══════════════ APPROVAL MODAL ═══════════════ -->
+<div class="modal-overlay" id="approve-modal">
+    <div class="modal">
+        <div class="modal-title">Process transaction</div>
+        <div class="modal-sub">Review the details then choose to approve or reject.</div>
+
+        <div style="background:var(--bg);border-radius:var(--radius);padding:14px;margin-bottom:20px">
+            <div class="modal-detail-row">
+                <span style="color:var(--muted);font-size:12px">Reference</span>
+                <strong id="modal-txn-ref" style="font-size:12px;font-family:monospace">—</strong>
+            </div>
+            <div class="modal-detail-row">
+                <span style="color:var(--muted);font-size:12px">Type</span>
+                <strong id="modal-txn-type">—</strong>
+            </div>
+            <div class="modal-detail-row">
+                <span style="color:var(--muted);font-size:12px">Amount</span>
+                <strong id="modal-txn-amount">—</strong>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Your decision</label>
+            <select id="modal-status">
+                <option value="APPROVED">Approve this transaction</option>
+                <option value="REJECTED">Reject this transaction</option>
+            </select>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn-ghost" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary" id="confirm-btn" onclick="confirmApproval()">
+                <i class="ti ti-check"></i> Confirm
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ── Login protection ──
+    // If no token in localStorage, user is not logged in — send to login page
+    // This runs immediately when the page loads
+    if (!localStorage.getItem('cib_token')) {
+      window.location.href = 'login.html';
+    }
+
+    const API_BASE = 'http://localhost:1990';
+    const token    = localStorage.getItem('cib_token');
+    const userRole = localStorage.getItem('cib_role');
+    const userName = localStorage.getItem('cib_name');
+
+
+    // ── Sidebar dropdown ──
+    function toggleDropdown() {
+      const items   = document.getElementById('dropdown-items');
+      const arrow   = document.getElementById('dropdown-arrow');
+      const trigger = document.querySelector('.nav-dropdown-trigger');
+      if (!items) return;
+      items.classList.toggle('open');
+      arrow.classList.toggle('open');
+      trigger.classList.toggle('open');
+    }
+    function initDropdown() {
+      const isTransfers = window.location.pathname.includes('transfers');
+      if (isTransfers) {
+        const items   = document.getElementById('dropdown-items');
+        const arrow   = document.getElementById('dropdown-arrow');
+        const trigger = document.querySelector('.nav-dropdown-trigger');
+        if (items)   items.classList.add('open');
+        if (arrow)   arrow.classList.add('open');
+        if (trigger) trigger.classList.add('open');
+      }
+    }
+
+    // ── Sidebar ──
+
+    // ── Sidebar dropdown ──
+    function toggleDropdown() {
+      const items   = document.getElementById('dropdown-items');
+      const arrow   = document.getElementById('dropdown-arrow');
+      const trigger = document.querySelector('.nav-dropdown-trigger');
+      if (!items) return;
+      items.classList.toggle('open');
+      arrow.classList.toggle('open');
+      trigger.classList.toggle('open');
+    }
+    function initDropdown() {
+      const isTransfers = window.location.pathname.includes('transfers');
+      if (isTransfers) {
+        const items   = document.getElementById('dropdown-items');
+        const arrow   = document.getElementById('dropdown-arrow');
+        const trigger = document.querySelector('.nav-dropdown-trigger');
+        if (items)   items.classList.add('open');
+        if (arrow)   arrow.classList.add('open');
+        if (trigger) trigger.classList.add('open');
+      }
+    }
+
+    function updateSidebar() {
+      if (userName) {
+        const initials = userName.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
+        document.getElementById('sidebar-name').textContent   = userName;
+        document.getElementById('sidebar-role').textContent   = userRole || 'User';
+        document.getElementById('sidebar-avatar').textContent = initials;
+        document.getElementById('topbar-avatar').textContent  = initials;
+      }
+    }
+
+    // ── Show/hide sections based on role ──
+    function checkRoles() {
+      if (userRole !== 'MAKER') {
+        document.getElementById('internal-maker-notice').style.display = 'flex';
+        document.getElementById('internal-form').style.display = 'none';
+        document.getElementById('payout-maker-notice').style.display = 'flex';
+        document.getElementById('payout-form').style.display = 'none';
+      }
+      if (userRole !== 'APPROVER' && userRole !== 'ADMIN') {
+        document.getElementById('approver-notice').style.display = 'flex';
+      }
+    }
+
+    // ── Tab switching ──
+    function switchTab(e, name) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      e.currentTarget.classList.add('active');
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById(`panel-${name}`).classList.add('active');
+      if (name === 'pending') loadPendingTransactions();
+      if (name === 'all')     loadAllTransactions();
+    }
+
+    // ══════════════════════════════════════════════
+    // INTERNAL TRANSFER — POST /transactions/initiate
+    // MAKER only, JWT carries maker identity
+    // ══════════════════════════════════════════════
+    async function initiateInternalTransfer() {
+      const sourceAccount      = document.getElementById('int-source').value.trim();
+      const destinationAccount = document.getElementById('int-dest').value.trim();
+      const amount             = document.getElementById('int-amount').value;
+      const idempotencyKey     = document.getElementById('int-idem').value.trim();
+
+      hideAlert('internal');
+
+      if (!sourceAccount || !destinationAccount || !amount || !idempotencyKey) {
+        showAlert('internal', 'error', 'Please fill in all fields.'); return;
+      }
+
+      const btn = document.getElementById('internal-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="ti ti-loader"></i> Initiating...';
+
+      try {
+        const res = await fetch(`${API_BASE}/transactions/initiate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({
+            sourceAccount,
+            destinationAccount,
+            amount: Number(amount),
+            type: 'INTERNAL_TRANSFER',
+            idempotencyKey
+            // no creatorId — backend reads from JWT token
+          })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          showAlert('internal', 'success',
+            `Transfer initiated! Ref: ${data.data?.transactionReference || '—'}. Waiting for approver.`);
+          clearFields(['int-source','int-dest','int-amount','int-idem']);
+        } else {
+          showAlert('internal', 'error', data.message || 'Transfer failed.');
+        }
+      } catch (e) {
+        showAlert('internal', 'error', 'Could not reach the server. Is Spring running on port 1990?');
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ti ti-arrow-right"></i> Initiate transfer';
+    }
+
+    // ══════════════════════════════════════════════
+    // EXTERNAL PAYOUT — POST /external/payout
+    // MAKER only, JWT carries maker identity
+    // ══════════════════════════════════════════════
+    async function initiateExternalPayout() {
+      const sourceAccount  = document.getElementById('pay-source').value.trim();
+      const amount         = document.getElementById('pay-amount').value;
+      const accountNumber  = document.getElementById('pay-accnum').value.trim();
+      const bankCode       = document.getElementById('pay-bankcode').value.trim();
+      const bankName       = document.getElementById('pay-bankname').value.trim();
+      const accountName    = document.getElementById('pay-accname').value.trim();
+      const idempotencyKey = document.getElementById('pay-idem').value.trim();
+
+      hideAlert('payout');
+
+      if (!sourceAccount || !amount || !accountNumber || !bankCode || !bankName || !accountName || !idempotencyKey) {
+        showAlert('payout', 'error', 'Please fill in all fields.'); return;
+      }
+
+      const btn = document.getElementById('payout-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="ti ti-loader"></i> Initiating...';
+
+      try {
+        const res = await fetch(`${API_BASE}/external/payout`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({
+            sourceAccount,
+            amount: Number(amount),
+            accountNumber,
+            bankCode,
+            bankName,
+            accountName,
+            type: 'EXTERNAL_PAYOUT',
+            idempotencyKey
+            // no makerId — backend reads from JWT token
+          })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          showAlert('payout', 'success',
+            'Payout initiated! Waiting for approver. Status updates once Paystack confirms.');
+          clearFields(['pay-source','pay-amount','pay-accnum','pay-bankcode','pay-bankname','pay-accname','pay-idem']);
+        } else {
+          showAlert('payout', 'error', data.message || 'Payout failed.');
+        }
+      } catch (e) {
+        showAlert('payout', 'error', 'Could not reach the server. Is Spring running on port 1990?');
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ti ti-send"></i> Initiate payout';
+    }
+
+    // ══════════════════════════════════════════════
+    // EXTERNAL FUNDING — POST /external/fund
+    // Public — no role restriction
+    // FundRequest: sourceAccount, amount, email, type, idempotencyKey
+    // (no createdBy — backend reads from JWT)
+    // ══════════════════════════════════════════════
+    async function initiateExternalFunding() {
+      const sourceAccount  = document.getElementById('fund-source').value.trim();
+      const amount         = document.getElementById('fund-amount').value;
+      const email          = document.getElementById('fund-email').value.trim();
+      const idempotencyKey = document.getElementById('fund-idem').value.trim();
+
+      hideAlert('funding');
+
+      if (!sourceAccount || !amount || !email || !idempotencyKey) {
+        showAlert('funding', 'error', 'Please fill in all fields.'); return;
+      }
+
+      const btn = document.getElementById('funding-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="ti ti-loader"></i> Initiating...';
+
+      try {
+        const res = await fetch(`${API_BASE}/external/fund`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({
+            sourceAccount,
+            amount: Number(amount),
+            email,
+            type: 'EXTERNAL_FUNDING',
+            idempotencyKey
+            // no createdBy — backend reads from JWT token
+          })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          // Paystack usually returns a payment link or authorization URL
+          const paymentUrl = data.data?.authorization_url || data.data?.paymentUrl;
+          if (paymentUrl) {
+            showAlert('funding', 'success',
+              `Funding initiated! Opening Paystack payment page...`);
+            setTimeout(() => window.open(paymentUrl, '_blank'), 1500);
+          } else {
+            showAlert('funding', 'success',
+              `Funding initiated! Reference: ${data.data?.reference || '—'}`);
+          }
+          clearFields(['fund-source','fund-amount','fund-email','fund-idem']);
+        } else {
+          showAlert('funding', 'error', data.message || 'Funding request failed.');
+        }
+      } catch (e) {
+        showAlert('funding', 'error', 'Could not reach the server. Is Spring running on port 1990?');
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ti ti-cash"></i> Initiate funding';
+    }
+
+    // ══════════════════════════════════════════════
+    // PENDING TRANSACTIONS — GET /transactions/pending
+    // ══════════════════════════════════════════════
+    async function loadPendingTransactions() {
+      const tbody = document.getElementById('pending-table-body');
+      tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><i class="ti ti-loader"></i> Loading...</div></td></tr>`;
+
+      try {
+        const res = await fetch(`${API_BASE}/transactions/pending`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+
+        if (res.ok && data.data && data.data.length > 0) {
+          renderPendingTable(data.data);
+        } else {
+          tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><i class="ti ti-circle-check"></i> No pending transactions.</div></td></tr>`;
+        }
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><i class="ti ti-wifi-off"></i> Could not load. Is the server running?</div></td></tr>`;
+      }
+    }
+
+    // Render pending table
+    // TransactionResponse: id, sourceAccount{accountNumber}, destinationAccount{accountNumber},
+    // amount, type, status, transactionReference, creator{id}
+    function renderPendingTable(txns) {
+      const tbody      = document.getElementById('pending-table-body');
+      const isApprover = userRole === 'APPROVER' || userRole === 'ADMIN';
+
+      tbody.innerHTML = txns.map(t => {
+        const actions = isApprover
+          ? `<div style="display:flex;gap:6px">
+               <button class="btn btn-success"
+                 onclick="openModal(${t.id},'${t.transactionReference}',${t.amount},'${t.type}','APPROVED')">
+                 <i class="ti ti-check"></i> Approve
+               </button>
+               <button class="btn btn-danger"
+                 onclick="openModal(${t.id},'${t.transactionReference}',${t.amount},'${t.type}','REJECTED')">
+                 <i class="ti ti-x"></i> Reject
+               </button>
+             </div>`
+          : '<span style="color:var(--muted);font-size:12px">No access</span>';
+
+        return `
+          <tr>
+            <td style="font-size:11px;font-family:monospace">${t.transactionReference || '—'}</td>
+            <td><span class="pill ${getTypePill(t.type)}">${t.type || '—'}</span></td>
+            <td>${t.sourceAccount?.accountNumber || '—'}</td>
+            <td>${t.destinationAccount?.accountNumber || '—'}</td>
+            <td style="font-weight:500">₦${Number(t.amount || 0).toLocaleString()}</td>
+            <td><span class="pill ${getStatusPill(t.status)}">${t.status || '—'}</span></td>
+            <td>${actions}</td>
+          </tr>`;
+      }).join('');
+    }
+
+    // ══════════════════════════════════════════════
+    // ALL TRANSACTIONS — GET /transactions/transactions
+    // ADMIN only, paginated
+    // ══════════════════════════════════════════════
+    async function loadAllTransactions() {
+      const tbody = document.getElementById('all-table-body');
+      tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><i class="ti ti-loader"></i> Loading...</div></td></tr>`;
+
+      try {
+        const res = await fetch(`${API_BASE}/transactions/transactions?page=0&size=50`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        const list = data.data?.content || data.data || [];
+
+        if (res.ok && list.length > 0) {
+          const tbody = document.getElementById('all-table-body');
+          tbody.innerHTML = list.map(t => `
+            <tr>
+              <td style="font-size:11px;font-family:monospace">${t.transactionReference || '—'}</td>
+              <td><span class="pill ${getTypePill(t.type)}">${t.type || '—'}</span></td>
+              <td>${t.sourceAccount?.accountNumber || '—'}</td>
+              <td>${t.destinationAccount?.accountNumber || '—'}</td>
+              <td style="font-weight:500">₦${Number(t.amount || 0).toLocaleString()}</td>
+              <td><span class="pill ${getStatusPill(t.status)}">${t.status || '—'}</span></td>
+              <td>${t.creator?.id || '—'}</td>
+            </tr>`).join('');
+        } else {
+          tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><i class="ti ti-list"></i> No transactions found.</div></td></tr>`;
+        }
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><i class="ti ti-wifi-off"></i> Could not load.</div></td></tr>`;
+      }
+    }
+
+    // ══════════════════════════════════════════════
+    // APPROVAL MODAL
+    // ══════════════════════════════════════════════
+    let pendingTxnId = null;
+
+    function openModal(id, ref, amount, type, defaultStatus) {
+      pendingTxnId = id;
+      document.getElementById('modal-txn-ref').textContent    = ref || id;
+      document.getElementById('modal-txn-type').textContent   = type;
+      document.getElementById('modal-txn-amount').textContent = '₦' + Number(amount).toLocaleString();
+      document.getElementById('modal-status').value           = defaultStatus;
+      document.getElementById('approve-modal').classList.add('show');
+    }
+
+    function closeModal() {
+      document.getElementById('approve-modal').classList.remove('show');
+      pendingTxnId = null;
+    }
+
+    // Confirm approval — POST /transactions/approve
+    // TransactionApprovalRequest: transactionId, status (no approverId — JWT handles it)
+    async function confirmApproval() {
+      const status = document.getElementById('modal-status').value;
+      const btn    = document.getElementById('confirm-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="ti ti-loader"></i> Processing...';
+
+      try {
+        const res = await fetch(`${API_BASE}/transactions/approve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ transactionId: pendingTxnId, status })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          closeModal();
+          const msg = status === 'APPROVED'
+            ? 'Transaction approved! For external payouts, use Testing Tools to simulate Paystack webhook.'
+            : 'Transaction rejected successfully.';
+          showAlert('pending', 'success', msg);
+          loadPendingTransactions();
+        } else {
+          showAlert('pending', 'error', data.message || 'Could not process transaction.');
+          closeModal();
+        }
+      } catch (e) {
+        showAlert('pending', 'error', 'Could not reach the server.');
+        closeModal();
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ti ti-check"></i> Confirm';
+    }
+
+    // ══════════════════════════════════════════════
+    // SIMULATE WEBHOOK — POST /webhook/paystack
+    // TESTING ONLY — simulates Paystack calling your endpoint
+    // PaystackWebhookRequest: event (String), data { reference, status }
+    // ══════════════════════════════════════════════
+    async function simulateWebhook() {
+      const reference = document.getElementById('webhook-ref').value.trim();
+      const event     = document.getElementById('webhook-event').value;
+
+      hideAlert('webhook');
+
+      if (!reference) {
+        showAlert('webhook', 'error', 'Please paste a transaction reference first.'); return;
+      }
+
+      const btn = document.getElementById('webhook-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="ti ti-loader"></i> Simulating...';
+
+      try {
+        const res = await fetch(`${API_BASE}/webhook/paystack`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({
+            event: event,
+            data: {
+              reference: reference,
+              status: event === 'transfer.success' ? 'success' : 'failed'
+            }
+          })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          showAlert('webhook', 'success',
+            `Webhook simulated! Event: "${event}" sent for ref: ${reference}. Check the transaction status.`);
+          document.getElementById('webhook-ref').value = '';
+          loadPendingTransactions(); // refresh to see status change
+        } else {
+          showAlert('webhook', 'error', data.message || 'Webhook simulation failed.');
+        }
+      } catch (e) {
+        showAlert('webhook', 'error', 'Could not reach the server. Is Spring running on port 1990?');
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ti ti-player-play"></i> Simulate Paystack webhook';
+    }
+
+    // ── Helpers ──
+    function getStatusPill(status) {
+      const s = (status || '').toUpperCase();
+      if (s === 'APPROVED' || s === 'SUCCESS' || s === 'COMPLETED') return 'pill-green';
+      if (s === 'PENDING'  || s === 'AWAITING_APPROVAL')            return 'pill-amber';
+      if (s === 'REJECTED' || s === 'FAILED')                        return 'pill-red';
+      return 'pill-amber';
+    }
+    function getTypePill(type) {
+      const t = (type || '').toUpperCase();
+      if (t === 'INTERNAL_TRANSFER') return 'pill-blue';
+      if (t === 'EXTERNAL_PAYOUT')   return 'pill-purple';
+      if (t === 'EXTERNAL_FUNDING')  return 'pill-green';
+      return 'pill-blue';
+    }
+    function showAlert(prefix, type, msg) {
+      const el    = document.getElementById(`${prefix}-${type}`);
+      const msgEl = document.getElementById(`${prefix}-${type}-msg`);
+      if (msgEl) msgEl.textContent = msg;
+      if (el) el.classList.add('show');
+      setTimeout(() => { if (el) el.classList.remove('show'); }, 7000);
+    }
+    function hideAlert(prefix) {
+      ['success','error'].forEach(t => {
+        const el = document.getElementById(`${prefix}-${t}`);
+        if (el) el.classList.remove('show');
+      });
+    }
+    function clearFields(ids) {
+      ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    }
+
+    // ── Run on load ──
+    updateSidebar();
+    checkRoles();
+    initDropdown();
+
+    // ── Open correct tab based on URL hash ──
+    // e.g. transfers.html#funding opens the funding tab automatically
+    const hash = window.location.hash.replace('#', '');
+    const tabMap = {
+      internal: 0, payout: 1, funding: 2, pending: 3, all: 4
+    };
+    if (hash && tabMap[hash] !== undefined) {
+      const tabs = document.querySelectorAll('.tab');
+      const panels = document.querySelectorAll('.tab-panel');
+      tabs.forEach(t => t.classList.remove('active'));
+      panels.forEach(p => p.classList.remove('active'));
+      tabs[tabMap[hash]].classList.add('active');
+      panels[tabMap[hash]].classList.add('active');
+      if (hash === 'pending') loadPendingTransactions();
+      if (hash === 'all')     loadAllTransactions();
+    }
+</script>
+</body>
+</html>

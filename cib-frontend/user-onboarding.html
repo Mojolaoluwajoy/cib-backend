@@ -252,6 +252,34 @@
         .info-box i { font-size: 17px; flex-shrink: 0; margin-top: 1px; }
 
         .hidden { display: none !important; }
+
+        /* ── Sidebar dropdown ── */
+        .nav-dropdown { margin-bottom: 1px; }
+        .nav-dropdown-trigger {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 9px 10px; border-radius: var(--radius);
+          cursor: pointer; font-size: 13px; color: rgba(255,255,255,0.55);
+          transition: background 0.15s, color 0.15s;
+        }
+        .nav-dropdown-trigger:hover { background: rgba(255,255,255,0.07); color: #fff; }
+        .nav-dropdown-trigger.open  { background: rgba(255,255,255,0.07); color: #fff; }
+        .dropdown-arrow { font-size: 14px; transition: transform 0.2s; flex-shrink: 0; }
+        .dropdown-arrow.open { transform: rotate(180deg); }
+        .nav-dropdown-items {
+          display: none; flex-direction: column; gap: 1px;
+          padding: 4px 0 4px 12px; margin-top: 2px;
+        }
+        .nav-dropdown-items.open { display: flex; }
+        .nav-sub-item {
+          display: flex; align-items: center; gap: 9px;
+          padding: 7px 10px; border-radius: var(--radius);
+          font-size: 12px; color: rgba(255,255,255,0.45);
+          text-decoration: none;
+          transition: background 0.15s, color 0.15s;
+        }
+        .nav-sub-item:hover  { background: rgba(255,255,255,0.06); color: #fff; }
+        .nav-sub-item.active { color: #60a5fa; font-weight: 500; }
+        .nav-sub-item i { font-size: 15px; flex-shrink: 0; }
     </style>
 </head>
 <body>
@@ -270,9 +298,23 @@
         <a class="nav-item active" href="user-onboarding.html"><i class="ti ti-user-plus"></i> User Onboarding</a>
         <a class="nav-item" href="accounts.html"><i class="ti ti-building-bank"></i> Accounts</a>
         <div class="nav-section">Transactions</div>
-        <a class="nav-item" href="transfers.html"><i class="ti ti-arrow-left-right"></i> Transfers</a>
-        <a class="nav-item" href="funding.html"><i class="ti ti-cash"></i> External Funding</a>
-        <a class="nav-item" href="payouts.html"><i class="ti ti-send"></i> Payouts</a>
+        <div class="nav-dropdown">
+            <div class="nav-dropdown-trigger" onclick="toggleDropdown()">
+                <div style="display:flex;align-items:center;gap:10px">
+                    <i class="ti ti-arrow-left-right" style="font-size:17px;flex-shrink:0"></i>
+                    <span>Transactions</span>
+                </div>
+                <i class="ti ti-chevron-down dropdown-arrow" id="dropdown-arrow"></i>
+            </div>
+            <div class="nav-dropdown-items" id="dropdown-items">
+                <a class="nav-sub-item" href="transfers.html#internal"><i class="ti ti-refresh"></i> Internal
+                    Transfer</a>
+                <a class="nav-sub-item" href="transfers.html#payout"><i class="ti ti-send"></i> External Payout</a>
+                <a class="nav-sub-item" href="transfers.html#funding"><i class="ti ti-cash"></i> External Funding</a>
+                <a class="nav-sub-item" href="transfers.html#pending"><i class="ti ti-clock"></i> Pending Approval</a>
+                <a class="nav-sub-item" href="transfers.html#all"><i class="ti ti-list"></i> All Transactions</a>
+            </div>
+        </div>
         <div class="nav-section">System</div>
         <a class="nav-item" href="settings.html"><i class="ti ti-settings"></i> Settings</a>
     </nav>
@@ -509,12 +551,42 @@
 </div>
 
 <script>
+    // ── Login protection ──
+    // If no token in localStorage, user is not logged in — send to login page
+    // This runs immediately when the page loads
+    if (!localStorage.getItem('cib_token')) {
+      window.location.href = 'login.html';
+    }
+
     const API_BASE  = 'http://localhost:1990';
     const token     = localStorage.getItem('cib_token');
     const userRole  = localStorage.getItem('cib_role');
     const userName  = localStorage.getItem('cib_name');
 
     // ── Update sidebar ──
+
+    // ── Sidebar dropdown ──
+    function toggleDropdown() {
+      const items   = document.getElementById('dropdown-items');
+      const arrow   = document.getElementById('dropdown-arrow');
+      const trigger = document.querySelector('.nav-dropdown-trigger');
+      if (!items) return;
+      items.classList.toggle('open');
+      arrow.classList.toggle('open');
+      trigger.classList.toggle('open');
+    }
+    function initDropdown() {
+      const isTransfers = window.location.pathname.includes('transfers');
+      if (isTransfers) {
+        const items   = document.getElementById('dropdown-items');
+        const arrow   = document.getElementById('dropdown-arrow');
+        const trigger = document.querySelector('.nav-dropdown-trigger');
+        if (items)   items.classList.add('open');
+        if (arrow)   arrow.classList.add('open');
+        if (trigger) trigger.classList.add('open');
+      }
+    }
+
     function updateSidebar() {
       if (userName) {
         const initials = userName.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();

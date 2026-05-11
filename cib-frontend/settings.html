@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>CIB Platform — Settings</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" rel="stylesheet"/>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+          --bg:        #f4f5f7;
+          --surface:   #ffffff;
+          --border:    #e4e6eb;
+          --text:      #111827;
+          --muted:     #6b7280;
+          --hint:      #9ca3af;
+          --blue:      #1a56db;
+          --blue-bg:   #eff6ff;
+          --blue-text: #1e40af;
+          --green:     #0f9f6e;
+          --green-bg:  #ecfdf5;
+          --green-text:#065f46;
+          --amber:     #d97706;
+          --amber-bg:  #fffbeb;
+          --amber-text:#92400e;
+          --red:       #e02424;
+          --red-bg:    #fef2f2;
+          --red-text:  #991b1b;
+          --navy:      #0f172a;
+          --radius:    8px;
+          --radius-lg: 12px;
+        }
+
+        body {
+          font-family: 'DM Sans', sans-serif;
+          background: var(--bg); color: var(--text);
+          font-size: 14px; min-height: 100vh; display: flex;
+        }
+
+        /* ── Sidebar ── */
+        .sidebar {
+          width: 220px; flex-shrink: 0; background: var(--navy);
+          display: flex; flex-direction: column;
+          min-height: 100vh; position: fixed; top: 0; left: 0; bottom: 0;
+        }
+        .sidebar-logo { padding: 24px 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .logo-name { font-size: 16px; font-weight: 600; color: #fff; letter-spacing: -0.3px; }
+        .logo-tag  { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+        .nav { padding: 16px 12px; flex: 1; }
+        .nav-section {
+          font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.3);
+          text-transform: uppercase; letter-spacing: 0.8px; padding: 12px 8px 4px;
+        }
+        .nav-item {
+          display: flex; align-items: center; gap: 10px;
+          padding: 9px 10px; border-radius: var(--radius);
+          cursor: pointer; font-size: 13px; color: rgba(255,255,255,0.55);
+          text-decoration: none; transition: background 0.15s, color 0.15s; margin-bottom: 1px;
+        }
+        .nav-item:hover  { background: rgba(255,255,255,0.07); color: #fff; }
+        .nav-item.active { background: var(--blue); color: #fff; }
+        .nav-item i { font-size: 17px; flex-shrink: 0; }
+        .nav-dropdown { margin-bottom: 1px; }
+        .nav-dropdown-trigger {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 9px 10px; border-radius: var(--radius);
+          cursor: pointer; font-size: 13px; color: rgba(255,255,255,0.55);
+          transition: background 0.15s, color 0.15s;
+        }
+        .nav-dropdown-trigger:hover { background: rgba(255,255,255,0.07); color: #fff; }
+        .dropdown-arrow { font-size: 14px; transition: transform 0.2s; flex-shrink: 0; }
+        .dropdown-arrow.open { transform: rotate(180deg); }
+        .nav-dropdown-items { display: none; flex-direction: column; gap: 1px; padding: 4px 0 4px 12px; margin-top: 2px; }
+        .nav-dropdown-items.open { display: flex; }
+        .nav-sub-item {
+          display: flex; align-items: center; gap: 9px;
+          padding: 7px 10px; border-radius: var(--radius);
+          font-size: 12px; color: rgba(255,255,255,0.45); text-decoration: none;
+          transition: background 0.15s, color 0.15s;
+        }
+        .nav-sub-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+        .nav-sub-item i { font-size: 15px; flex-shrink: 0; }
+        .sidebar-footer { padding: 16px 12px; border-top: 1px solid rgba(255,255,255,0.08); }
+        .user-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; }
+        .avatar {
+          width: 32px; height: 32px; border-radius: 50%; background: var(--blue);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 12px; font-weight: 600; color: #fff; flex-shrink: 0;
+        }
+        .user-name { font-size: 13px; color: rgba(255,255,255,0.8); font-weight: 500; }
+        .user-role { font-size: 11px; color: rgba(255,255,255,0.35); }
+
+        /* ── Main ── */
+        .main { margin-left: 220px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+        /* ── Topbar ── */
+        .topbar {
+          background: var(--surface); border-bottom: 1px solid var(--border);
+          padding: 0 28px; height: 60px;
+          display: flex; align-items: center; justify-content: space-between;
+          position: sticky; top: 0; z-index: 10;
+        }
+        .page-title { font-size: 15px; font-weight: 600; }
+        .page-sub   { font-size: 12px; color: var(--muted); margin-top: 1px; }
+        .icon-btn {
+          background: none; border: none; cursor: pointer; color: var(--muted); font-size: 20px;
+          display: flex; align-items: center; justify-content: center;
+          padding: 4px; border-radius: var(--radius);
+        }
+        .icon-btn:hover { background: var(--bg); }
+
+        /* ── Content ── */
+        .content { padding: 28px; flex: 1; display: flex; flex-direction: column; gap: 24px; max-width: 720px; }
+
+        /* ── Profile banner ── */
+        .profile-banner {
+          background: var(--navy); border-radius: var(--radius-lg);
+          padding: 24px 28px; display: flex; align-items: center; gap: 20px;
+        }
+        .profile-avatar {
+          width: 56px; height: 56px; border-radius: 50%;
+          background: var(--blue); display: flex; align-items: center; justify-content: center;
+          font-size: 20px; font-weight: 600; color: #fff; flex-shrink: 0;
+        }
+        .profile-name  { font-size: 18px; font-weight: 600; color: #fff; letter-spacing: -0.3px; }
+        .profile-email { font-size: 13px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+        .profile-role  {
+          font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px;
+          background: var(--blue); color: #fff; margin-top: 8px; display: inline-block;
+        }
+
+        /* ── Cards ── */
+        .card {
+          background: var(--surface); border: 1px solid var(--border);
+          border-radius: var(--radius-lg); padding: 24px;
+        }
+        .card-header {
+          display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+          padding-bottom: 16px; border-bottom: 1px solid var(--border);
+        }
+        .card-header-icon {
+          width: 36px; height: 36px; border-radius: var(--radius);
+          display: flex; align-items: center; justify-content: center; font-size: 18px;
+        }
+        .card-title { font-size: 14px; font-weight: 600; color: var(--text); }
+        .card-sub   { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+        /* ── Form ── */
+        .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+        label {
+          font-size: 12px; font-weight: 600; color: var(--muted);
+          text-transform: uppercase; letter-spacing: 0.4px;
+        }
+        .input-wrap { position: relative; }
+        .input-wrap .input-icon {
+          position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+          font-size: 17px; color: var(--hint); pointer-events: none;
+        }
+        .input-wrap .toggle-pw {
+          position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+          font-size: 17px; color: var(--hint); cursor: pointer;
+        }
+        input, select {
+          width: 100%; padding: 10px 12px 10px 38px;
+          border: 1px solid var(--border); border-radius: var(--radius);
+          font-size: 14px; font-family: 'DM Sans', sans-serif;
+          color: var(--text); background: var(--surface);
+          outline: none; transition: border-color 0.15s;
+        }
+        select { padding-left: 12px; }
+        input:focus, select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(26,86,219,0.1); }
+        input::placeholder { color: var(--hint); }
+
+        /* ── Buttons ── */
+        .btn {
+          padding: 10px 22px; border-radius: var(--radius);
+          font-size: 14px; font-weight: 500; font-family: 'DM Sans', sans-serif;
+          cursor: pointer; border: none;
+          display: inline-flex; align-items: center; gap: 8px; transition: opacity 0.15s;
+        }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-primary { background: var(--blue); color: #fff; }
+        .btn-primary:hover:not(:disabled) { opacity: 0.9; }
+        .btn-danger  { background: var(--red);  color: #fff; }
+        .btn-danger:hover:not(:disabled)  { opacity: 0.9; }
+
+        /* ── Alert ── */
+        .alert {
+          padding: 12px 14px; border-radius: var(--radius);
+          font-size: 13px; font-weight: 500;
+          display: none; align-items: center; gap: 10px; margin-bottom: 16px;
+        }
+        .alert.show    { display: flex; }
+        .alert-success { background: var(--green-bg); color: var(--green-text); }
+        .alert-error   { background: var(--red-bg);   color: var(--red-text); }
+
+        /* ── Role notice ── */
+        .role-notice {
+          background: var(--amber-bg); border: 1px solid #fcd34d;
+          border-radius: var(--radius); padding: 12px 16px;
+          font-size: 13px; color: var(--amber-text);
+          display: flex; align-items: center; gap: 10px;
+        }
+        .role-notice i { font-size: 17px; flex-shrink: 0; }
+
+        /* ── Currency table ── */
+        .table-wrapper { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        thead tr { border-bottom: 2px solid var(--border); }
+        th {
+          text-align: left; padding: 10px 12px;
+          font-size: 11px; font-weight: 600; color: var(--muted);
+          text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        td { padding: 12px; border-bottom: 1px solid var(--border); }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: var(--bg); }
+
+        /* ── Pills ── */
+        .pill { font-size: 10px; font-weight: 600; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+        .pill-green { background: var(--green-bg); color: var(--green-text); }
+        .pill-red   { background: var(--red-bg);   color: var(--red-text); }
+        .pill-amber { background: var(--amber-bg); color: var(--amber-text); }
+
+        /* ── Empty ── */
+        .empty { text-align: center; padding: 30px 20px; color: var(--muted); font-size: 13px; }
+        .empty i { font-size: 32px; display: block; margin-bottom: 8px; color: var(--hint); }
+
+        /* ── Logout button ── */
+        .logout-row {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 16px 0; border-top: 1px solid var(--border); margin-top: 8px;
+        }
+        .logout-label { font-size: 13px; color: var(--muted); }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<!-- ═══════════════ SIDEBAR ═══════════════ -->
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        <div class="logo-name">CIB Platform</div>
+        <div class="logo-tag">Corporate Internet Banking</div>
+    </div>
+    <nav class="nav">
+        <div class="nav-section">Overview</div>
+        <a class="nav-item" href="index.html"><i class="ti ti-layout-dashboard"></i> Dashboard</a>
+        <div class="nav-section">Clients</div>
+        <a class="nav-item" href="org-onboarding.html"><i class="ti ti-building"></i> Org Onboarding</a>
+        <a class="nav-item" href="user-onboarding.html"><i class="ti ti-user-plus"></i> User Onboarding</a>
+        <a class="nav-item" href="accounts.html"><i class="ti ti-building-bank"></i> Accounts</a>
+        <div class="nav-section">Transactions</div>
+        <div class="nav-dropdown">
+            <div class="nav-dropdown-trigger" onclick="toggleDropdown()">
+                <div style="display:flex;align-items:center;gap:10px">
+                    <i class="ti ti-arrow-left-right" style="font-size:17px;flex-shrink:0"></i>
+                    <span>Transactions</span>
+                </div>
+                <i class="ti ti-chevron-down dropdown-arrow" id="dropdown-arrow"></i>
+            </div>
+            <div class="nav-dropdown-items" id="dropdown-items">
+                <a class="nav-sub-item" href="transfers.html#internal"><i class="ti ti-refresh"></i> Internal
+                    Transfer</a>
+                <a class="nav-sub-item" href="transfers.html#payout"><i class="ti ti-send"></i> External Payout</a>
+                <a class="nav-sub-item" href="transfers.html#funding"><i class="ti ti-cash"></i> External Funding</a>
+                <a class="nav-sub-item" href="transfers.html#pending"><i class="ti ti-clock"></i> Pending Approval</a>
+                <a class="nav-sub-item" href="transfers.html#all"><i class="ti ti-list"></i> All Transactions</a>
+            </div>
+        </div>
+        <div class="nav-section">System</div>
+        <a class="nav-item active" href="settings.html"><i class="ti ti-settings"></i> Settings</a>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="user-row">
+            <div class="avatar" id="sidebar-avatar">?</div>
+            <div>
+                <div class="user-name" id="sidebar-name">Guest</div>
+                <div class="user-role" id="sidebar-role">Not logged in</div>
+            </div>
+        </div>
+    </div>
+</aside>
+
+<!-- ═══════════════ MAIN ═══════════════ -->
+<div class="main">
+    <header class="topbar">
+        <div>
+            <div class="page-title">Settings</div>
+            <div class="page-sub">Manage your account and system settings</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+            <button class="icon-btn"><i class="ti ti-bell"></i></button>
+            <div class="avatar" id="topbar-avatar">?</div>
+        </div>
+    </header>
+
+    <main class="content">
+
+        <!-- Profile banner -->
+        <div class="profile-banner">
+            <div class="profile-avatar" id="profile-avatar">?</div>
+            <div>
+                <div class="profile-name" id="profile-name">—</div>
+                <div class="profile-email" id="profile-email">—</div>
+                <div class="profile-role" id="profile-role">—</div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════ -->
+        <!-- Change Password (any logged in user) -->
+        <!-- POST /auth/password/reset          -->
+        <!-- PasswordResetRequest: email, oldPassword, newPassword -->
+        <!-- ══════════════════════════════════ -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-header-icon" style="background:var(--blue-bg)">
+                    <i class="ti ti-lock" style="color:var(--blue)"></i>
+                </div>
+                <div>
+                    <div class="card-title">Change password</div>
+                    <div class="card-sub">Update your account password. You'll need your current password.</div>
+                </div>
+            </div>
+
+            <div class="alert alert-success" id="pw-success">
+                <i class="ti ti-circle-check"></i>
+                <span id="pw-success-msg">Password changed successfully!</span>
+            </div>
+            <div class="alert alert-error" id="pw-error">
+                <i class="ti ti-alert-circle"></i>
+                <span id="pw-error-msg">Failed to change password.</span>
+            </div>
+
+            <div class="form-group">
+                <label>Current password</label>
+                <div class="input-wrap">
+                    <i class="ti ti-lock input-icon"></i>
+                    <input id="pw-old" placeholder="Enter your current password" type="password"/>
+                    <i class="ti ti-eye toggle-pw" onclick="toggleField('pw-old', this)"></i>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>New password</label>
+                <div class="input-wrap">
+                    <i class="ti ti-lock-check input-icon"></i>
+                    <input id="pw-new" placeholder="Min. 8 characters" type="password"/>
+                    <i class="ti ti-eye toggle-pw" onclick="toggleField('pw-new', this)"></i>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Confirm new password</label>
+                <div class="input-wrap">
+                    <i class="ti ti-lock-check input-icon"></i>
+                    <input id="pw-confirm" placeholder="Repeat new password" type="password"/>
+                    <i class="ti ti-eye toggle-pw" onclick="toggleField('pw-confirm', this)"></i>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" id="pw-btn" onclick="changePassword()">
+                <i class="ti ti-lock"></i> Update password
+            </button>
+        </div>
+
+        <!-- ══════════════════════════════════ -->
+        <!-- Currency Management (SUPER_ADMIN)  -->
+        <!-- POST /currencies/status            -->
+        <!-- CurrencyRequest: code, status      -->
+        <!-- ══════════════════════════════════ -->
+        <div class="card" id="currency-section">
+            <div class="card-header">
+                <div class="card-header-icon" style="background:var(--green-bg)">
+                    <i class="ti ti-currency-dollar" style="color:var(--green)"></i>
+                </div>
+                <div>
+                    <div class="card-title">Currency management</div>
+                    <div class="card-sub">Enable or disable currencies in the system. SUPER_ADMIN only.</div>
+                </div>
+            </div>
+
+            <!-- Shown if not SUPER_ADMIN -->
+            <div class="role-notice hidden" id="currency-lock">
+                <i class="ti ti-lock"></i>
+                Only <strong>SUPER_ADMIN</strong> users can manage currencies.
+            </div>
+
+            <div id="currency-controls">
+                <div class="alert alert-success" id="curr-success">
+                    <i class="ti ti-circle-check"></i>
+                    <span id="curr-success-msg">Currency status updated!</span>
+                </div>
+                <div class="alert alert-error" id="curr-error">
+                    <i class="ti ti-alert-circle"></i>
+                    <span id="curr-error-msg">Failed to update currency.</span>
+                </div>
+
+                <!-- Change currency status form -->
+                <div style="display:flex;gap:12px;margin-bottom:20px;align-items:flex-end;flex-wrap:wrap">
+                    <div class="form-group" style="margin-bottom:0;flex:1;min-width:160px">
+                        <label>Currency code</label>
+                        <select id="curr-code" style="padding-left:12px">
+                            <option value="NGN">NGN — Nigerian Naira</option>
+                            <option value="USD">USD — US Dollar</option>
+                            <option value="GBP">GBP — British Pound</option>
+                            <option value="EUR">EUR — Euro</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;flex:1;min-width:160px">
+                        <label>New status</label>
+                        <select id="curr-status" style="padding-left:12px">
+                            <option value="ACTIVE">Active</option>
+                            <option value="INACTIVE">Inactive</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" id="curr-btn" onclick="changeCurrencyStatus()"
+                            style="margin-bottom:0;flex-shrink:0">
+                        <i class="ti ti-refresh"></i> Update status
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════ -->
+        <!-- Logout                             -->
+        <!-- ══════════════════════════════════ -->
+        <div class="card">
+            <div class="card-header" style="margin-bottom:0;border-bottom:none;padding-bottom:0">
+                <div class="card-header-icon" style="background:var(--red-bg)">
+                    <i class="ti ti-logout" style="color:var(--red)"></i>
+                </div>
+                <div>
+                    <div class="card-title">Sign out</div>
+                    <div class="card-sub">You will be returned to the login page.</div>
+                </div>
+            </div>
+            <div style="margin-top:16px">
+                <button class="btn btn-danger" onclick="logout()">
+                    <i class="ti ti-logout"></i> Sign out
+                </button>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script>
+    // ── Login protection ──
+    // If no token in localStorage, user is not logged in — send to login page
+    // This runs immediately when the page loads
+    if (!localStorage.getItem('cib_token')) {
+      window.location.href = 'login.html';
+    }
+
+    const API_BASE = 'http://localhost:1990';
+    const token    = localStorage.getItem('cib_token');
+    const userRole = localStorage.getItem('cib_role');
+    const userName = localStorage.getItem('cib_name');
+    const userEmail= localStorage.getItem('cib_email');
+
+    // ── Update sidebar and profile banner ──
+    function updateUI() {
+      if (userName) {
+        const initials = userName.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
+
+        // Sidebar
+        document.getElementById('sidebar-name').textContent   = userName;
+        document.getElementById('sidebar-role').textContent   = userRole || 'User';
+        document.getElementById('sidebar-avatar').textContent = initials;
+        document.getElementById('topbar-avatar').textContent  = initials;
+
+        // Profile banner
+        document.getElementById('profile-avatar').textContent = initials;
+        document.getElementById('profile-name').textContent   = userName;
+        document.getElementById('profile-email').textContent  = userEmail || '—';
+        document.getElementById('profile-role').textContent   = userRole  || '—';
+      }
+
+      // Show/hide currency section based on role
+      if (userRole !== 'SUPER_ADMIN') {
+        document.getElementById('currency-controls').classList.add('hidden');
+        document.getElementById('currency-lock').classList.remove('hidden');
+      }
+    }
+
+    // ── Toggle dropdown ──
+    function toggleDropdown() {
+      const items   = document.getElementById('dropdown-items');
+      const arrow   = document.getElementById('dropdown-arrow');
+      const trigger = document.querySelector('.nav-dropdown-trigger');
+      items.classList.toggle('open');
+      arrow.classList.toggle('open');
+      trigger.classList.toggle('open');
+    }
+
+    // ── Change password (POST /auth/password/reset) ──
+    // PasswordResetRequest: email, oldPassword, newPassword
+    // Requires being logged in — token sent in header
+    async function changePassword() {
+      const oldPassword = document.getElementById('pw-old').value;
+      const newPassword = document.getElementById('pw-new').value;
+      const confirm     = document.getElementById('pw-confirm').value;
+
+      hideAlert('pw');
+
+      if (!oldPassword || !newPassword || !confirm) {
+        showAlert('pw', 'error', 'Please fill in all fields.'); return;
+      }
+      if (newPassword !== confirm) {
+        showAlert('pw', 'error', 'New passwords do not match.'); return;
+      }
+      if (newPassword.length < 8) {
+        showAlert('pw', 'error', 'New password must be at least 8 characters.'); return;
+      }
+      if (newPassword === oldPassword) {
+        showAlert('pw', 'error', 'New password must be different from current password.'); return;
+      }
+
+      const btn = document.getElementById('pw-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="ti ti-loader"></i> Updating...';
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/password/reset`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            email: userEmail,
+            oldPassword,
+            newPassword
+          })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          showAlert('pw', 'success', 'Password changed successfully!');
+          document.getElementById('pw-old').value     = '';
+          document.getElementById('pw-new').value     = '';
+          document.getElementById('pw-confirm').value = '';
+        } else {
+          showAlert('pw', 'error', data.message || 'Failed to change password. Check your current password.');
+        }
+
+      } catch (e) {
+        showAlert('pw', 'error', 'Could not reach the server. Is Spring running on port 1990?');
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ti ti-lock"></i> Update password';
+    }
+
+    // ── Change currency status (POST /currencies/status) ──
+    // CurrencyRequest: code, status
+    // SUPER_ADMIN only
+    async function changeCurrencyStatus() {
+      const code   = document.getElementById('curr-code').value;
+      const status = document.getElementById('curr-status').value;
+
+      hideAlert('curr');
+
+      const btn = document.getElementById('curr-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="ti ti-loader"></i> Updating...';
+
+      try {
+        const res = await fetch(`${API_BASE}/currencies/status`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ code, status })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          showAlert('curr', 'success',
+            `${code} status updated to ${status} successfully!`);
+        } else {
+          showAlert('curr', 'error', data.message || 'Failed to update currency status.');
+        }
+
+      } catch (e) {
+        showAlert('curr', 'error', 'Could not reach the server. Is Spring running on port 1990?');
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ti ti-refresh"></i> Update status';
+    }
+
+    // ── Logout ──
+    // Clears all saved login data and returns to login page
+    function logout() {
+      if (!confirm('Are you sure you want to sign out?')) return;
+      localStorage.removeItem('cib_token');
+      localStorage.removeItem('cib_role');
+      localStorage.removeItem('cib_name');
+      localStorage.removeItem('cib_email');
+      window.location.href = 'login.html';
+    }
+
+    // ── Toggle password field visibility ──
+    function toggleField(inputId, icon) {
+      const input = document.getElementById(inputId);
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('ti-eye', 'ti-eye-off');
+      } else {
+        input.type = 'password';
+        icon.classList.replace('ti-eye-off', 'ti-eye');
+      }
+    }
+
+    // ── Alert helpers ──
+    function showAlert(prefix, type, msg) {
+      const el    = document.getElementById(`${prefix}-${type}`);
+      const msgEl = document.getElementById(`${prefix}-${type}-msg`);
+      if (msgEl) msgEl.textContent = msg;
+      if (el) el.classList.add('show');
+      setTimeout(() => { if (el) el.classList.remove('show'); }, 6000);
+    }
+    function hideAlert(prefix) {
+      ['success','error'].forEach(t => {
+        const el = document.getElementById(`${prefix}-${t}`);
+        if (el) el.classList.remove('show');
+      });
+    }
+
+    // ── Run on load ──
+    updateUI();
+    initDropdown();
+</script>
+</body>
+</html>
