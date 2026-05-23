@@ -3,14 +3,12 @@ package org.app.corporateinternetbanking.user.service;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.app.corporateinternetbanking.email.EmailSenderService;
-import org.app.corporateinternetbanking.organization.domain.entity.Organization;
 import org.app.corporateinternetbanking.organization.domain.repository.OrganizationRepository;
 import org.app.corporateinternetbanking.organization.exceptions.OrganizationDoesNotExist;
 import org.app.corporateinternetbanking.security.JwtService;
 import org.app.corporateinternetbanking.user.domain.entity.User;
 import org.app.corporateinternetbanking.user.domain.repository.UserRepository;
 import org.app.corporateinternetbanking.user.dto.*;
-import org.app.corporateinternetbanking.user.enums.UserRole;
 import org.app.corporateinternetbanking.user.enums.UserStatus;
 import org.app.corporateinternetbanking.user.exceptions.*;
 import org.app.corporateinternetbanking.user.utils.mapper.PasswordResetResponseMap;
@@ -18,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -25,13 +24,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.app.corporateinternetbanking.user.utils.mapper.UserMap.mapResponse;
-import static org.app.corporateinternetbanking.user.utils.mapper.UserMap.userMapRequest;
 
 @Slf4j
 @Service
 @AllArgsConstructor
 public class UserServiceImpl implements UserService {
     private final UserRepository repository;
+    // private final User user;
     PasswordEncoder passwordEncoder;
     @Autowired
     EmailSenderService senderService;
@@ -41,32 +40,46 @@ public class UserServiceImpl implements UserService {
     private JwtService jwtService;
 
     @Override
-    public String sendInvitationTokenToUser(InvitationRequest invitationRequest) {
+    public String sendInvitationTokenToUser(InvitationRequest invitationRequest) throws UserNotFound, UserAlreadyRegistered {
+        User admin = getCurrentUser();
+        org.app.corporateinternetbanking.organization.domain.entity.Organization organization
+                = admin.getOrganization();
+
+        if (repository.existsByEmail(invitationRequest.getUserEmail())) {
+            throw new UserAlreadyRegistered("User already exists");
+        }
+        User user = new User();
+        user.setEmail(invitationRequest.getUserEmail());
+        user.setRole(invitationRequest.getRole());
+        user.setOrganization(organization);
+        user.setStatus(UserStatus.INACTIVE);
+        repository.save(user);
         String token = jwtService.generateEmailToken(invitationRequest.getUserEmail());
         sendMail(invitationRequest, token);
         return invitationRequest.getUserEmail();
     }
 
     @Override
-    public UserResponse createUserWithToken(UserRegistrationRequest request) throws UserAlreadyRegistered, OrganizationDoesNotExist, TokenExpiredOrInvalid, SuperAdminAlreadyExists {
-        if (request.getRole() == UserRole.SUPER_ADMIN) {
-            throw new SuperAdminAlreadyExists("Super admin already exists");
-        }
+    public UserResponse createUserWithToken(UserRegistrationRequest request) throws UserAlreadyRegistered, OrganizationDoesNotExist, TokenExpiredOrInvalid, SuperAdminAlreadyExists, UserNotFound {
+
         if (!jwtService.isEmailTokenValid(request.getToken())) {
             throw new TokenExpiredOrInvalid("Token expired or its invalid");
         }
-        String nin = request.getNin();
-        String email = request.getEmail();
-        if (repository.findByNin(nin).isPresent() || repository.findByEmail(email).isPresent()) {
-            throw new UserAlreadyRegistered("This user already exists");
+        User user = repository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UserNotFound("This user has not been invited"));
+
+        if (user.getStatus() == UserStatus.ACTIVE) {
+            throw new UserAlreadyRegistered("This user has already completed registration");
         }
-        Organization organization = organizationRepository.findById(request.getOrganizationId())
-                .orElseThrow(() -> new OrganizationDoesNotExist("This organization does not exist"));
-        User user = userMapRequest(request);
-        user.setOrganization(organization);
+
+        if (repository.findByNin(request.getNin()).isPresent()) {
+            throw new UserAlreadyRegistered("This NIN is already registered");
+        }
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setNin(request.getNin());
         user.setStatus(UserStatus.ACTIVE);
-        String encodedPassword = passwordEncoder.encode(request.getPassword());
-        user.setPassword(encodedPassword);
         User savedUser = repository.save(user);
         return mapResponse(savedUser);
     }
@@ -141,5 +154,13 @@ public class UserServiceImpl implements UserService {
         senderService.sendEmail(invitationRequest.getUserEmail(), "Account Creation Token", "Your verification token is: \n" + token);
 
 
+    }
+
+    private User getCurrentUser() throws UserNotFound {
+        String email = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
+        return repository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFound("User not found"));
     }
 }

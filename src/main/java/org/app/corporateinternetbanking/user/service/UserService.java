@@ -11,11 +11,11 @@ import java.util.List;
 public interface UserService {
 
 
-    UserResponse createUserWithToken(UserRegistrationRequest request) throws UserAlreadyRegistered, TokenExpiredOrInvalid, OrganizationDoesNotExist, SuperAdminAlreadyExists;
+    UserResponse createUserWithToken(UserRegistrationRequest request) throws UserAlreadyRegistered, TokenExpiredOrInvalid, OrganizationDoesNotExist, SuperAdminAlreadyExists, UserNotFound;
 
     List<UserResponse> ViewAllUsers();
 
-    String sendInvitationTokenToUser(InvitationRequest request);
+    String sendInvitationTokenToUser(InvitationRequest request) throws UserNotFound, UserAlreadyRegistered;
 
 
     Page<User> viewByStatus(int page, int size, String status);
