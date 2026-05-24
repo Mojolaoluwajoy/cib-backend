@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.app.corporateinternetbanking.commons.response.GenericResponse;
 import org.app.corporateinternetbanking.organization.exceptions.OrganizationDoesNotExist;
 import org.app.corporateinternetbanking.user.dto.InvitationRequest;
+import org.app.corporateinternetbanking.user.dto.UpdateProfileRequest;
 import org.app.corporateinternetbanking.user.dto.UserRegistrationRequest;
 import org.app.corporateinternetbanking.user.dto.UserResponse;
 import org.app.corporateinternetbanking.user.exceptions.*;
@@ -49,6 +50,23 @@ public class UserController {
     public ResponseEntity<GenericResponse> getUsers(@RequestParam int page, @RequestParam int size, @RequestParam(required = false) String status) {
         return new ResponseEntity<>(GenericResponse.success(service.viewByStatus(page, size, status), "Users found"), HttpStatus.OK);
 
+    }
+
+    @Operation(summary = "To update one's profile")
+    @PutMapping("/profile")
+    public ResponseEntity<GenericResponse> updateOwnProfile(
+            @RequestBody UpdateProfileRequest request) throws UserNotFound, UserAlreadyRegistered {
+        return ResponseEntity.ok(GenericResponse.success(
+                service.updateProfile(request), "Profile updated"));
+    }
+
+    @Operation(summary = "To update other users profile")
+    @PutMapping("/{userId}/profile")
+    public ResponseEntity<GenericResponse> updateUserProfile(
+            @PathVariable Long userId,
+            @RequestBody UpdateProfileRequest request) throws UserNotFound, UserAlreadyRegistered, UnauthorizedAccess {
+        return ResponseEntity.ok(GenericResponse.success(
+                service.updateUserProfile(userId, request), "Profile updated"));
     }
 
 
