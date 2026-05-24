@@ -1,10 +1,10 @@
 package org.app.corporateinternetbanking.user.utils.mapper;
 
 import org.app.corporateinternetbanking.organization.dto.OrganizationId;
+import org.app.corporateinternetbanking.user.domain.entity.User;
 import org.app.corporateinternetbanking.user.dto.UserRegistrationRequest;
 import org.app.corporateinternetbanking.user.dto.UserResponse;
 import org.app.corporateinternetbanking.user.enums.UserStatus;
-import org.app.corporateinternetbanking.user.domain.entity.User;
 
 import java.util.UUID;
 
@@ -20,8 +20,6 @@ public class UserMap {
         user.setEmail(registrationRequest.getEmail());
         user.setNin(registrationRequest.getNin());
         user.setNin(registrationRequest.getNin());
-        user.setRole(registrationRequest.getRole());
-        user.setStatus(registrationRequest.getStatus());
         return user;
     }
 
