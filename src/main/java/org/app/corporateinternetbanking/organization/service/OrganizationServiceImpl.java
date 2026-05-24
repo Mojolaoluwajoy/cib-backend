@@ -13,6 +13,7 @@ import org.app.corporateinternetbanking.organization.utils.mapper.Map;
 import org.app.corporateinternetbanking.transaction.service.PaystackService;
 import org.app.corporateinternetbanking.user.domain.entity.User;
 import org.app.corporateinternetbanking.user.domain.repository.UserRepository;
+import org.app.corporateinternetbanking.user.enums.UserRole;
 import org.app.corporateinternetbanking.user.enums.UserStatus;
 import org.app.corporateinternetbanking.user.exceptions.UserAlreadyRegistered;
 import org.app.corporateinternetbanking.user.exceptions.UserNotFound;
@@ -52,6 +53,7 @@ public class OrganizationServiceImpl implements OrganizationService {
         user.setOrganization(organization);
         String encodedPassword = passwordEncoder.encode(request.getPassword());
         user.setPassword(encodedPassword);
+        user.setRole(UserRole.ADMIN);
         User savedUser = userRepository.save(user);
         return Map.mapRegistrationResponse(savedOrganization, savedUser);
     }
