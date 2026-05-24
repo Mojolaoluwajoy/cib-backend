@@ -22,6 +22,7 @@ import org.app.corporateinternetbanking.user.domain.repository.UserRepository;
 import org.app.corporateinternetbanking.user.enums.UserRole;
 import org.app.corporateinternetbanking.user.exceptions.UnauthorizedAccess;
 import org.app.corporateinternetbanking.user.exceptions.UserNotFound;
+import org.app.corporateinternetbanking.user.service.UserServiceImpl;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -43,15 +44,15 @@ public class ApprovalService {
     private final LedgerService ledgerService;
     private final AccountService accountService;
     private final PayStackClient payStackClient;
+    private final UserServiceImpl userService;
 
     public TransactionApprovalResponse approveInternalTransaction(TransactionApprovalRequest request) throws TransactionAlreadyProcessed, TransactionDoesNotExist, InvalidStatus, UnsupportedTransactionType, UserNotFound,
             UnauthorizedAccess, InvalidAmount, AccountDoesNotExist, CurrencyNotFound, InsufficientBalance,
             IsNull {
         Transaction transaction = transactionRepository.findById(request.getTransactionId())
                 .orElseThrow(() -> new TransactionDoesNotExist("This transaction does not exist"));
-        User user = userRepository.findById(request.getApproverId())
-                .orElseThrow(() -> new UserNotFound("This user does not exist"));
-        if (!user.getRole().equals(UserRole.APPROVER)) {
+        User approver = userService.getCurrentUser();
+        if (!approver.getRole().equals(UserRole.APPROVER)) {
             throw new UnauthorizedAccess("The approver must have the role  APPROVER");
         }
         if (!transaction.getStatus().name().equalsIgnoreCase("PENDING") &&
@@ -61,7 +62,7 @@ public class ApprovalService {
         if (request.getStatus() != TransactionStatus.SUCCESS && request.getStatus() != TransactionStatus.REJECTED) {
             throw new InvalidStatus("invalid status");
         }
-        transaction.setProcessedBy(user);
+        transaction.setProcessedBy(approver);
         if (request.getStatus() == TransactionStatus.REJECTED) {
             transaction.setStatus(TransactionStatus.REJECTED);
             transactionRepository.save(transaction);
