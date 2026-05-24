@@ -40,10 +40,16 @@ public class OrganizationServiceImpl implements OrganizationService {
     @Override
     public OrganizationRegistrationResponse registerOrganization(OrganizationRequest request) throws UserAlreadyRegistered, OrganizationAlreadyExist {
 
+        if (repository.findByRegistrationNumber(request.getRegistrationNumber()).isPresent() ||
+                repository.findByName(request.getName()).isPresent()) {
+            throw new OrganizationAlreadyExist("This organization already exists");
+        }
+
         Organization organization = Map.mapRequest(request);
         Organization savedOrganization = repository.save(organization);
         repository.findByRegistrationNumber(request.getRegistrationNumber())
                 .orElseThrow(() -> new OrganizationAlreadyExist("This organization already exist"));
+
         String nin = request.getNin();
         String email = request.getEmail();
         if (userRepository.findByNin(nin).isPresent() || userRepository.findByEmail(email).isPresent()) {
