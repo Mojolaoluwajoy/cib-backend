@@ -164,6 +164,7 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new UserNotFound("User not found"));
     }
 
+    @Override
     public UserResponse updateProfile(UpdateProfileRequest request) throws UserNotFound, UserAlreadyRegistered {
         User currentUser = getCurrentUser();
 
@@ -180,6 +181,7 @@ public class UserServiceImpl implements UserService {
         return mapResponse(saved);
     }
 
+    @Override
     public UserResponse updateUserProfile(Long userId, UpdateProfileRequest request) throws UserNotFound, UnauthorizedAccess, UserAlreadyRegistered {
 
         User admin = getCurrentUser();
