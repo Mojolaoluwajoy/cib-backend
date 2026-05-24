@@ -13,7 +13,6 @@ public class FundRequest {
     private String accountNumber;
     private BigDecimal amount;
     private String email;
-    private Long createdBy;
     private TransactionType type;
     private String idempotencyKey;
 }
