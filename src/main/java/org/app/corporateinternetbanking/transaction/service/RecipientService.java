@@ -14,6 +14,7 @@ import org.app.corporateinternetbanking.transaction.exceptions.DuplicateTransact
 import org.app.corporateinternetbanking.transaction.exceptions.InsufficientBalance;
 import org.app.corporateinternetbanking.transaction.exceptions.InvalidAmount;
 import org.app.corporateinternetbanking.transaction.exceptions.IsNull;
+import org.app.corporateinternetbanking.transaction.utils.mapper.PayoutMap;
 import org.app.corporateinternetbanking.user.exceptions.UnauthorizedAccess;
 import org.app.corporateinternetbanking.user.exceptions.UserNotFound;
 import org.springframework.stereotype.Service;
@@ -23,7 +24,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.app.corporateinternetbanking.transaction.utils.mapper.PayoutMap.getPayoutRecipient;
-import static org.app.corporateinternetbanking.transaction.utils.mapper.PayoutMap.mapToPayoutRequest;
 
 @Slf4j
 @Service
@@ -33,12 +33,12 @@ public class RecipientService {
     private final PayoutRecipientRepository payoutRecipientRepository;
     private final PayStackClient payStackClient;
     private final TransactionServiceImpl transactionService;
-
+    private final PayoutMap payoutMap;
 
     public TransactionResponse requestPayOut(PayoutRequest payoutRequest) throws UserNotFound, InvalidAccount, InvalidAmount, InsufficientBalance, UnauthorizedAccess, IsNull, DuplicateTransaction, AccountDoesNotExist {
 
         PayoutRecipient recipient = createOrFetch(payoutRequest);
-        TransferRequest transferRequest = mapToPayoutRequest(payoutRequest);
+        TransferRequest transferRequest = payoutMap.mapToPayoutRequest(payoutRequest);
         transferRequest.setPayoutRecipientId(recipient.getId());
         return transactionService.initiateTransaction(transferRequest);
 
