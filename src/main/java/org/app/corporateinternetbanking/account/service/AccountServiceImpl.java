@@ -21,6 +21,7 @@ import org.app.corporateinternetbanking.user.domain.entity.User;
 import org.app.corporateinternetbanking.user.domain.repository.UserRepository;
 import org.app.corporateinternetbanking.user.dto.UserIdDto;
 import org.app.corporateinternetbanking.user.exceptions.UserNotFound;
+import org.app.corporateinternetbanking.user.service.UserServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
@@ -35,6 +36,7 @@ import static org.app.corporateinternetbanking.account.utils.mapper.Map.response
 @AllArgsConstructor
 public class AccountServiceImpl implements AccountService {
     private final UserRepository userRepository;
+    private final UserServiceImpl userService;
     @Autowired
     AccountRepository repository;
     @Autowired
@@ -47,6 +49,8 @@ public class AccountServiceImpl implements AccountService {
     @Override
     public AccountResponse createAccount(AccountRequest request) throws OrganizationDoesNotExist, UserNotFound, CurrencyNotFound, CurrencyNotActive {
         Account account = requestMap(request);
+        User creator = userService.getCurrentUser();
+        Organization organization = creator.getOrganization();
         Currency currency = currencyRepository.findByCode(request.getCurrencyCode())
                 .orElseThrow(() -> new CurrencyNotFound("This currency does not exist"));
         account.setCurrency(currency);
@@ -54,12 +58,8 @@ public class AccountServiceImpl implements AccountService {
             throw new CurrencyNotActive("This currency is not available for use right now");
 
         }
-        Organization organization = organizationRepository.findById(request.getOrganization())
-                .orElseThrow(() -> new OrganizationDoesNotExist("Organization not found"));
-        User user = userRepository.findById(request.getCreatedBy())
-                .orElseThrow(() -> new UserNotFound("The user with the specified id does not exist"));
         account.setOrganization(organization);
-        account.setCreatedBy(user);
+        account.setCreatedBy(creator);
 
         Account savedAccount = repository.save(account);
         return responseMap(savedAccount);
