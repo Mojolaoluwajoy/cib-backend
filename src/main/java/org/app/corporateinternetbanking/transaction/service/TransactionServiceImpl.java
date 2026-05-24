@@ -21,6 +21,7 @@ import org.app.corporateinternetbanking.user.domain.repository.UserRepository;
 import org.app.corporateinternetbanking.user.enums.UserRole;
 import org.app.corporateinternetbanking.user.exceptions.UnauthorizedAccess;
 import org.app.corporateinternetbanking.user.exceptions.UserNotFound;
+import org.app.corporateinternetbanking.user.service.UserServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -40,6 +41,7 @@ import static org.app.corporateinternetbanking.transaction.utils.mapper.Transact
 @RequiredArgsConstructor
 public class TransactionServiceImpl implements TransactionService {
     private final PayoutRecipientRepository payoutRecipientRepository;
+    private final UserServiceImpl userService;
     @Autowired
     AccountRepository accountRepository;
     @Autowired
@@ -121,17 +123,15 @@ public class TransactionServiceImpl implements TransactionService {
             throw new InvalidAmount("Amount must be greater than zero");
         }
 
-        User user = userRepository.findById(request.getCreatorId())
-                .orElseThrow(() -> new UserNotFound("This user does not exist"));
-
-        if (!user.getRole().equals(UserRole.MAKER)) {
+        User maker = userService.getCurrentUser();
+        if (!maker.getRole().equals(UserRole.MAKER)) {
             throw new UnauthorizedAccess("the transaction creator must be a MAKER");
         }
         if (request.getAmount().compareTo(BigDecimal.ZERO) < 0) {
             throw new InvalidAmount("depositAmount must not be less than zero");
         }
         Transaction transaction = mapRequest(request);
-        transaction.setCreatedBy(user);
+        transaction.setCreatedBy(maker);
         return transaction;
     }
 
