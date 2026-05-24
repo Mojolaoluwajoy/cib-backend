@@ -7,10 +7,7 @@ import org.app.corporateinternetbanking.organization.exceptions.OrganizationDoes
 import org.app.corporateinternetbanking.user.dto.InvitationRequest;
 import org.app.corporateinternetbanking.user.dto.UserRegistrationRequest;
 import org.app.corporateinternetbanking.user.dto.UserResponse;
-import org.app.corporateinternetbanking.user.exceptions.SuperAdminAlreadyExists;
-import org.app.corporateinternetbanking.user.exceptions.TokenExpiredOrInvalid;
-import org.app.corporateinternetbanking.user.exceptions.UnauthorizedAccess;
-import org.app.corporateinternetbanking.user.exceptions.UserAlreadyRegistered;
+import org.app.corporateinternetbanking.user.exceptions.*;
 import org.app.corporateinternetbanking.user.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -28,14 +25,14 @@ public class UserController {
 
     @Operation(summary = "Send user creation token invitation to email")
     @PostMapping("/invitation")
-    public ResponseEntity<GenericResponse> sendInvitation(@RequestBody InvitationRequest request) {
+    public ResponseEntity<GenericResponse> sendInvitation(@RequestBody InvitationRequest request) throws UserNotFound, UserAlreadyRegistered {
         String email = service.sendInvitationTokenToUser(request);
         return new ResponseEntity<>(GenericResponse.success(email, "token successfully sent"), HttpStatus.CREATED);
     }
 
     @Operation(summary = "Create a user with token from admin")
     @PostMapping("/create")
-    public ResponseEntity<GenericResponse> createUser(@RequestBody UserRegistrationRequest request) throws UserAlreadyRegistered, UnauthorizedAccess, OrganizationDoesNotExist, TokenExpiredOrInvalid, SuperAdminAlreadyExists {
+    public ResponseEntity<GenericResponse> createUser(@RequestBody UserRegistrationRequest request) throws UserAlreadyRegistered, UnauthorizedAccess, OrganizationDoesNotExist, TokenExpiredOrInvalid, SuperAdminAlreadyExists, UserNotFound {
         UserResponse response = service.createUserWithToken(request);
         return new ResponseEntity<>(GenericResponse.success(response, "user registration successful"), HttpStatus.CREATED);
     }
