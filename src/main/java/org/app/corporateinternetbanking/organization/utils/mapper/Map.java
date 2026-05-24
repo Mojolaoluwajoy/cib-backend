@@ -49,8 +49,6 @@ public class Map {
         user.setEmail(registrationRequest.getEmail());
         user.setNin(registrationRequest.getNin());
         user.setPassword(registrationRequest.getPassword());
-        // user.setOrganization(registrationRequest.getOrganizationId());
-        user.setRole(registrationRequest.getRole());
         return user;
     }
 
