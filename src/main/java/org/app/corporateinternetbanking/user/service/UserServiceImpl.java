@@ -156,7 +156,7 @@ public class UserServiceImpl implements UserService {
 
     }
 
-    private User getCurrentUser() throws UserNotFound {
+    public User getCurrentUser() throws UserNotFound {
         String email = SecurityContextHolder.getContext()
                 .getAuthentication()
                 .getName();
