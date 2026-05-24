@@ -46,16 +46,31 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(publicEndPoints)
                         .permitAll()
-                        .requestMatchers("/users/invitation/").hasRole(UserRole.ADMIN.name())
-                        .requestMatchers("/organizations/findBy", "/organization/viewAll").hasRole(UserRole.SUPER_ADMIN.name())
-                        .requestMatchers("/organizations/approve/").hasRole(UserRole.SUPER_ADMIN.name())
-                        .requestMatchers("/accounts/create/").hasRole(UserRole.ADMIN.name())
-                        .requestMatchers("/transactions/initiate").hasRole(UserRole.MAKER.name())
-                        .requestMatchers("/transactions/approve").hasRole(UserRole.APPROVER.name())
-                        .requestMatchers("/transactions/pending").hasAnyRole(UserRole.APPROVER.name(), UserRole.ADMIN.name())
-                        .requestMatchers("/currencies/status/").hasRole(UserRole.SUPER_ADMIN.name())
                         .requestMatchers("/external/transaction/payout/").hasRole(UserRole.MAKER.name())
                         .requestMatchers("/auth/password/reset").authenticated()
+                        // Update your SecurityConfig to add SUPER_ADMIN everywhere
+                        .requestMatchers("/users/invitation/**").hasAnyRole(
+                                UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
+                        .requestMatchers("/organizations/findBy", "/organizations/viewAll").hasAnyRole(
+                                UserRole.SUPER_ADMIN.name(), UserRole.ADMIN.name())
+                        .requestMatchers("/organizations/approve/**").hasRole(UserRole.SUPER_ADMIN.name())
+                        .requestMatchers("/organizations/**/profile").hasRole(UserRole.SUPER_ADMIN.name())
+                        .requestMatchers("/accounts/create/**").hasAnyRole(
+                                UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
+                        .requestMatchers("/accounts/organization/**").hasAnyRole(
+                                UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
+                        .requestMatchers("/transactions/initiate").hasRole(
+                                UserRole.MAKER.name())
+                        .requestMatchers("/transactions/approve").hasRole(
+                                UserRole.APPROVER.name())
+                        .requestMatchers("/transactions/pending").hasAnyRole(
+                                UserRole.APPROVER.name(), UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
+                        .requestMatchers("/users/profile").authenticated()
+                        .requestMatchers("/users/*/profile").hasAnyRole(
+                                UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name()).requestMatchers("/users/**/profile").hasAnyRole(
+                                UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
+                        .requestMatchers("/currencies/status/**").hasRole(UserRole.SUPER_ADMIN.name())
+                        .requestMatchers("/dashboard/stats").authenticated()
                         .anyRequest().authenticated()).sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
