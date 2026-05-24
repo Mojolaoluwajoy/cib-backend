@@ -14,7 +14,6 @@ public class TransferRequest {
     private BigDecimal amount;
     private TransactionType type;
     private String idempotencyKey;
-    private Long creatorId;
     private Long payoutRecipientId;
 
 }
