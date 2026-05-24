@@ -15,7 +15,6 @@ public class PayoutRequest {
     private String bankCode;
     private String bankName;
     private String accountName;
-    private Long makerId;
     private TransactionType type;
     private String idempotencyKey;
 }
