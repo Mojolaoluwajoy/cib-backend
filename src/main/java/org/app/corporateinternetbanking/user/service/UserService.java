@@ -26,4 +26,8 @@ public interface UserService {
 
     PasswordResetResponse sendForgotPasswordToken(String email) throws InvalidEmail;
 
+    UserResponse updateUserProfile(Long userId, UpdateProfileRequest request) throws UserNotFound, UnauthorizedAccess, UserAlreadyRegistered;
+
+    UserResponse updateProfile(UpdateProfileRequest request) throws UserNotFound, UserAlreadyRegistered;
+
 }
