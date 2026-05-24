@@ -8,7 +8,5 @@ import org.app.corporateinternetbanking.account.enums.AccountType;
 @Getter
 public class AccountRequest {
     private AccountType type;
-    private Long createdBy;
-    private Long organization;
     private String currencyCode;
 }
