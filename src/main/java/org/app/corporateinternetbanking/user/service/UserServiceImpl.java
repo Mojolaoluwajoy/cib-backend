@@ -163,4 +163,47 @@ public class UserServiceImpl implements UserService {
         return repository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFound("User not found"));
     }
+
+    public UserResponse updateProfile(UpdateProfileRequest request) throws UserNotFound, UserAlreadyRegistered {
+        User currentUser = getCurrentUser();
+
+        if (request.getFirstName() != null) currentUser.setFirstName(request.getFirstName());
+        if (request.getLastName() != null) currentUser.setLastName(request.getLastName());
+        if (request.getEmail() != null && !request.getEmail().equals(currentUser.getEmail())) {
+            if (repository.findByEmail(request.getEmail()).isPresent()) {
+                throw new UserAlreadyRegistered("This email is already in use");
+            }
+            currentUser.setEmail(request.getEmail());
+        }
+
+        User saved = repository.save(currentUser);
+        return mapResponse(saved);
+    }
+
+    public UserResponse updateUserProfile(Long userId, UpdateProfileRequest request) throws UserNotFound, UnauthorizedAccess, UserAlreadyRegistered {
+
+        User admin = getCurrentUser();
+
+        User targetUser = repository.findById(userId)
+                .orElseThrow(() -> new UserNotFound("User not found"));
+
+        if (!targetUser.getOrganization().getId()
+                .equals(admin.getOrganization().getId())) {
+            throw new UnauthorizedAccess("This user is not in your organization");
+        }
+
+
+        if (request.getFirstName() != null) targetUser.setFirstName(request.getFirstName());
+        if (request.getLastName() != null) targetUser.setLastName(request.getLastName());
+
+        if (request.getEmail() != null && !request.getEmail().equals(targetUser.getEmail())) {
+            if (repository.findByEmail(request.getEmail()).isPresent()) {
+                throw new UserAlreadyRegistered("This email is already in use");
+            }
+            targetUser.setEmail(request.getEmail());
+        }
+
+        User saved = repository.save(targetUser);
+        return mapResponse(saved);
+    }
 }
