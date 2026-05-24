@@ -11,4 +11,6 @@ public interface OrganizationRepository extends JpaRepository<Organization, java
 
 
     Optional<Organization> findByRegistrationNumber(String registrationNumber);
+
+    Optional<Organization> findByName(String name);
 }
