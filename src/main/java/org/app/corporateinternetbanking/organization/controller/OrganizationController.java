@@ -52,4 +52,13 @@ public class OrganizationController {
         List<OrganizationOnlyResponse> response = service.viewAll();
         return new ResponseEntity<>(GenericResponse.success(response, "Organization found!"), HttpStatus.OK);
     }
+
+    @Operation(summary = "update an organization profile")
+    @PutMapping("/{orgId}/profile")
+    public ResponseEntity<GenericResponse> updateOrganization(
+            @PathVariable Long orgId,
+            @RequestBody UpdateOrganizationRequest request) throws OrganizationDoesNotExist {
+        return ResponseEntity.ok(GenericResponse.success(
+                service.updateOrganization(orgId, request), "Organization updated"));
+    }
 }
