@@ -71,6 +71,10 @@ public class SecurityConfiguration {
                                 UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
                         .requestMatchers("/currencies/status/**").hasRole(UserRole.SUPER_ADMIN.name())
                         .requestMatchers("/dashboard/stats").authenticated()
+                        .requestMatchers("/currencies/all", "/currencies/status/**").hasAnyRole(
+                                UserRole.ADMIN.name(),
+                                UserRole.SUPER_ADMIN.name()
+                        )
                         .anyRequest().authenticated()).sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
