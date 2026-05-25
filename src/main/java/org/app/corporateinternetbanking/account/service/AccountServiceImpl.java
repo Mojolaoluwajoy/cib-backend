@@ -6,6 +6,7 @@ import org.app.corporateinternetbanking.account.domain.repository.AccountReposit
 import org.app.corporateinternetbanking.account.dto.AccountRequest;
 import org.app.corporateinternetbanking.account.dto.AccountResponse;
 import org.app.corporateinternetbanking.account.exception.AccountDoesNotExist;
+import org.app.corporateinternetbanking.account.utils.mapper.Map;
 import org.app.corporateinternetbanking.currency.domain.entity.Currency;
 import org.app.corporateinternetbanking.currency.domain.repository.CurrencyRepository;
 import org.app.corporateinternetbanking.currency.enums.CurrencyStatus;
@@ -28,6 +29,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.app.corporateinternetbanking.account.utils.mapper.Map.requestMap;
 import static org.app.corporateinternetbanking.account.utils.mapper.Map.responseMap;
@@ -120,5 +122,13 @@ public class AccountServiceImpl implements AccountService {
         return repository.findByAccountNumber(accountNumber).orElseThrow(() -> new AccountDoesNotExist("Account not found"));
     }
 
+    public List<AccountResponse> getAccountsByOrganization(Long orgId) throws OrganizationDoesNotExist {
+        Organization org = organizationRepository.findById(orgId)
+                .orElseThrow(() -> new OrganizationDoesNotExist("Organization not found"));
 
+        List<Account> accounts = repository.findAllByOrganization(org);
+        return accounts.stream()
+                .map(Map::responseMap) // use your existing account mapper
+                .collect(Collectors.toList());
+    }
 }
