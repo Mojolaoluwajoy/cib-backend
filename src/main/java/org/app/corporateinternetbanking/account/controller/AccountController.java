@@ -46,4 +46,11 @@ public class AccountController {
         List<AccountResponse> response = service.viewAll();
         return new ResponseEntity<>(GenericResponse.success(response, "Accounts found!"), HttpStatus.OK);
     }
+
+    // In AccountController
+    @GetMapping("/organization/{orgId}")
+    public ResponseEntity<GenericResponse> getOrgAccounts(@PathVariable Long orgId) throws OrganizationDoesNotExist {
+        return ResponseEntity.ok(GenericResponse.success(
+                service.getAccountsByOrganization(orgId), "Accounts found"));
+    }
 }
