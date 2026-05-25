@@ -1,5 +1,6 @@
 package org.app.corporateinternetbanking.transaction.domain.repository;
 
+import org.app.corporateinternetbanking.organization.domain.entity.Organization;
 import org.app.corporateinternetbanking.transaction.domain.entity.Transaction;
 import org.app.corporateinternetbanking.transaction.enums.TransactionStatus;
 import org.springframework.data.domain.Page;
@@ -28,4 +29,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
 
 
     List<Transaction> findAllByStatus(TransactionStatus transactionStatus);
+
+    Page<Transaction> findAllBySourceAccount_Organization(
+            Organization organization, Pageable pageable);
 }
