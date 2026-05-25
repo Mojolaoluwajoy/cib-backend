@@ -117,5 +117,26 @@ public class OrganizationServiceImpl implements OrganizationService {
         return Map.mapResponse(organization.get());
     }
 
+    @Override
+    public OrganizationOnlyResponse updateOrganization(Long orgId, UpdateOrganizationRequest request) throws OrganizationDoesNotExist {
+        Organization org = repository.findById(orgId)
+                .orElseThrow(() -> new OrganizationDoesNotExist("Organization not found"));
+
+
+        if (request.getName() != null) org.setName(request.getName());
+        if (request.getOrganizationEmail() != null) org.setOrganizationEmail(request.getOrganizationEmail());
+        if (request.getRegistrationNumber() != null) org.setRegistrationNumber(request.getRegistrationNumber());
+
+        if (request.getOrganizationStatus() != null) {
+            org.setOrganizationStatus(request.getOrganizationStatus());
+            if (request.getOrganizationStatus() == OrganizationStatus.DISABLED) {
+                List<User> users = userRepository.findAllByOrganization(org);
+                users.forEach(u -> u.setStatus(UserStatus.INACTIVE));
+                userRepository.saveAll(users);
+            }
+        }
+
+        return Map.mapResponse(repository.save(org));
+    }
 
 }
