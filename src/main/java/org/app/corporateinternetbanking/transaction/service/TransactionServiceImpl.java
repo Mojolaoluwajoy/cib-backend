@@ -7,6 +7,9 @@ import org.app.corporateinternetbanking.account.domain.entity.Account;
 import org.app.corporateinternetbanking.account.domain.repository.AccountRepository;
 import org.app.corporateinternetbanking.account.exception.AccountDoesNotExist;
 import org.app.corporateinternetbanking.account.exception.InvalidAccount;
+import org.app.corporateinternetbanking.organization.domain.entity.Organization;
+import org.app.corporateinternetbanking.organization.domain.repository.OrganizationRepository;
+import org.app.corporateinternetbanking.organization.exceptions.OrganizationDoesNotExist;
 import org.app.corporateinternetbanking.transaction.domain.entity.PayoutRecipient;
 import org.app.corporateinternetbanking.transaction.domain.entity.Transaction;
 import org.app.corporateinternetbanking.transaction.domain.repository.PayoutRecipientRepository;
@@ -42,6 +45,7 @@ import static org.app.corporateinternetbanking.transaction.utils.mapper.Transact
 public class TransactionServiceImpl implements TransactionService {
     private final PayoutRecipientRepository payoutRecipientRepository;
     private final UserServiceImpl userService;
+    private final OrganizationRepository organizationRepository;
     @Autowired
     AccountRepository accountRepository;
     @Autowired
@@ -207,7 +211,18 @@ public class TransactionServiceImpl implements TransactionService {
         transactionRepository.save(transaction);
     }
 
-    private record Result(Account sourceAccount, Account destinationAccount) {
+    @Override
+    public Page<TransactionResponse> getTransactionsByOrganization(
+            Long orgId, int page, int size) throws OrganizationDoesNotExist {
+        Organization org = organizationRepository.findById(orgId)
+                .orElseThrow(() -> new OrganizationDoesNotExist("Organization not found"));
+
+        Pageable pageable = PageRequest.of(page, size);
+        // You'll need to add this query to your TransactionRepository
+        Page<Transaction> transactions = transactionRepository
+                .findAllBySourceAccount_Organization(org, pageable);
+
+        return transactions.map(TransactionMap::mapResponse);
     }
 
 
