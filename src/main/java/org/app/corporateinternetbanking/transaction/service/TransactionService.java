@@ -2,9 +2,10 @@ package org.app.corporateinternetbanking.transaction.service;
 
 import org.app.corporateinternetbanking.account.exception.AccountDoesNotExist;
 import org.app.corporateinternetbanking.account.exception.InvalidAccount;
+import org.app.corporateinternetbanking.organization.exceptions.OrganizationDoesNotExist;
 import org.app.corporateinternetbanking.transaction.domain.entity.Transaction;
-import org.app.corporateinternetbanking.transaction.dto.TransferRequest;
 import org.app.corporateinternetbanking.transaction.dto.TransactionResponse;
+import org.app.corporateinternetbanking.transaction.dto.TransferRequest;
 import org.app.corporateinternetbanking.transaction.exceptions.*;
 import org.app.corporateinternetbanking.user.exceptions.UnauthorizedAccess;
 import org.app.corporateinternetbanking.user.exceptions.UserNotFound;
@@ -30,5 +31,10 @@ public interface TransactionService {
     void markSuccess(String reference) throws TransactionDoesNotExist;
 
     void markFailed(String reference) throws TransactionDoesNotExist;
+
     Transaction findByTransactionReference(String transactionReference) throws TransactionDoesNotExist;
+
+    Page<TransactionResponse> getTransactionsByOrganization(
+            Long orgId, int page, int size) throws OrganizationDoesNotExist;
+
 }
