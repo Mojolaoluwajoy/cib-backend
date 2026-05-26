@@ -35,57 +35,78 @@ public class SecurityConfiguration {
                 "/auth/login",
                 "/auth/password/token",
                 "/auth/forgotten/password",
-                "/users/create", "/organizations/create",
+                "/users/create",
+                "/organizations/create",
                 "/swagger-ui/**",
                 "/swagger-ui.html",
                 "/v3/api-docs/**",
                 "/v3/api-docs",
                 "/webjars/**",
                 "/swagger-resources/**",
-                "/external/transaction/fund",
-                "/webhook/paystack",};
-        httpSecurity.csrf(csrf -> csrf.disable())
-                .cors(Customizer.withDefaults())  // ← add this line
+                "/external/fund",
+                "/webhook/paystack",
+        };
+
+        httpSecurity
+                .csrf(csrf -> csrf.disable())
+                .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()  // ← add this as first rule
+
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
                         .requestMatchers(publicEndPoints).permitAll()
-                        // ... rest of your existing rules
-                        // .requestMatchers(publicEndPoints)
-                        // .permitAll()
-                        .requestMatchers("/external/transaction/payout/").hasRole(UserRole.MAKER.name())
+
                         .requestMatchers("/auth/password/reset").authenticated()
-                        .requestMatchers("/users/invitation/**").hasAnyRole(
+
+                        .requestMatchers("/users/invitation").hasAnyRole(
                                 UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
-                        .requestMatchers("/organizations/findBy", "/organizations/viewAll").hasAnyRole(
-                                UserRole.SUPER_ADMIN.name(), UserRole.ADMIN.name())
-                        .requestMatchers("/organizations/approve/**").hasRole(UserRole.SUPER_ADMIN.name())
-                        .requestMatchers("/organizations/profile").hasRole(UserRole.SUPER_ADMIN.name())
-                        .requestMatchers("/accounts/create/**").hasAnyRole(
+                        .requestMatchers("/users/viewAll").hasAnyRole(
                                 UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
-                        .requestMatchers("/accounts/organization/**").hasAnyRole(
+                        .requestMatchers("/users/users").hasAnyRole(
                                 UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
-                        .requestMatchers("/transactions/initiate").hasRole(
-                                UserRole.MAKER.name())
-                        .requestMatchers("/transactions/approve").hasRole(
-                                UserRole.APPROVER.name())
-                        .requestMatchers("/transactions/pending").hasAnyRole(
-                                UserRole.APPROVER.name(), UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
                         .requestMatchers("/users/profile").authenticated()
-                        .requestMatchers("/users/profile").hasAnyRole(
-                                UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name()).requestMatchers("/users/profile").hasAnyRole(
+
+                        .requestMatchers("/organizations/findBy").hasAnyRole(
+                                UserRole.SUPER_ADMIN.name(), UserRole.ADMIN.name())
+                        .requestMatchers("/organizations/viewAll").hasAnyRole(
+                                UserRole.SUPER_ADMIN.name(), UserRole.ADMIN.name())
+                        .requestMatchers("/organizations/approve").hasRole(
+                                UserRole.SUPER_ADMIN.name())
+
+                        .requestMatchers("/accounts/create").hasAnyRole(
                                 UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
-                        .requestMatchers("/currencies/status/**").hasRole(UserRole.SUPER_ADMIN.name())
+                        .requestMatchers("/accounts/all").hasAnyRole(
+                                UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
+                        .requestMatchers("/accounts/find").hasAnyRole(
+                                UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
+
+                        .requestMatchers("/transactions/initiate").hasAnyRole(
+                                UserRole.MAKER.name(), UserRole.SUPER_ADMIN.name())
+                        .requestMatchers("/transactions/approve").hasAnyRole(
+                                UserRole.APPROVER.name(), UserRole.SUPER_ADMIN.name())
+                        .requestMatchers("/transactions/pending").hasAnyRole(
+                                UserRole.APPROVER.name(), UserRole.ADMIN.name(),
+                                UserRole.SUPER_ADMIN.name())
+                        .requestMatchers("/transactions/transactions").hasAnyRole(
+                                UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
+
+                        .requestMatchers("/external/payout").hasAnyRole(
+                                UserRole.MAKER.name(), UserRole.SUPER_ADMIN.name())
+
+                        .requestMatchers("/currencies/status").hasRole(
+                                UserRole.SUPER_ADMIN.name())
+                        .requestMatchers("/currencies/all").hasAnyRole(
+                                UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
+
                         .requestMatchers("/dashboard/stats").authenticated()
-                        .requestMatchers("/currencies/all", "/currencies/status/**").hasAnyRole(
-                                UserRole.ADMIN.name(),
-                                UserRole.SUPER_ADMIN.name()
-                        )
-                        .anyRequest().authenticated()).sessionManagement(session -> session
+                        .anyRequest().authenticated()
+                )
+                .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
-        return httpSecurity.build();
 
+        return httpSecurity.build();
     }
 
     @Bean
