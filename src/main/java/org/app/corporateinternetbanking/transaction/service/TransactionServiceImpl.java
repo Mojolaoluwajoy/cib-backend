@@ -61,6 +61,9 @@ public class TransactionServiceImpl implements TransactionService {
             case EXTERNAL_FUNDING -> validateFunding(request);
 
             case EXTERNAL_PAYOUT -> validatePayout(request);
+
+            case EXTERNAL_DEPOSIT ->
+                    throw new IllegalArgumentException("External Deposit cannot be initiated manually.They are processed automatically by the system.");
         };
         return mapResponse(savedTransaction);
     }
