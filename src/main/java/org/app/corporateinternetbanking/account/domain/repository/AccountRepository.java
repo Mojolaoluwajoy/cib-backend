@@ -13,4 +13,13 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     Optional<Account> findByAccountNumber(String accountNumber);
 
     List<Account> findAllByOrganization(Organization org);
+
+    Account findFirstByOrganizationId(Long id);
+
+    Account findOrganizationPaystackCustomerCodeAndIsPrimaryAccountTrue(String customerCode);
+
+    Optional<Account> findByOrganizationAndCurrencyCode(String customerCode);
+
+    Optional<Account> findFirstByOrganizationAndCurrencyCodeOrderByCreatedAtAsc(Organization organization, String currencyCode);
+
 }
