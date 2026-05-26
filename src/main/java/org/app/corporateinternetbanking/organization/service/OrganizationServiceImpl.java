@@ -1,6 +1,13 @@
 package org.app.corporateinternetbanking.organization.service;
 
 import lombok.RequiredArgsConstructor;
+import org.app.corporateinternetbanking.account.domain.repository.AccountRepository;
+import org.app.corporateinternetbanking.integration.paystack.FeignConfiguration;
+import org.app.corporateinternetbanking.integration.paystack.PayStackClient;
+import org.app.corporateinternetbanking.integration.paystack.dto.CreateCustomerRequest;
+import org.app.corporateinternetbanking.integration.paystack.dto.CreateDvaRequest;
+import org.app.corporateinternetbanking.integration.paystack.dto.PaystackCustomerResponse;
+import org.app.corporateinternetbanking.integration.paystack.dto.PaystackDvaResponse;
 import org.app.corporateinternetbanking.organization.domain.entity.Organization;
 import org.app.corporateinternetbanking.organization.domain.repository.OrganizationRepository;
 import org.app.corporateinternetbanking.organization.dto.*;
@@ -21,6 +28,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -30,6 +38,10 @@ import java.util.Optional;
 public class OrganizationServiceImpl implements OrganizationService {
 
     private final PaystackService paystackService;
+    private final PayStackClient payStackClient;
+    private final FeignConfiguration feignConfiguration;
+    private final AccountRepository accountRepository;
+    private final Map map;
     @Autowired
     OrganizationRepository repository;
     @Autowired
@@ -46,8 +58,9 @@ public class OrganizationServiceImpl implements OrganizationService {
         }
 
         Organization organization = Map.mapRequest(request);
+        organization.setRegisteredAt(LocalDateTime.now());
         Organization savedOrganization = repository.save(organization);
-       
+
         String nin = request.getNin();
         String email = request.getEmail();
         if (userRepository.findByNin(nin).isPresent() || userRepository.findByEmail(email).isPresent()) {
@@ -69,6 +82,7 @@ public class OrganizationServiceImpl implements OrganizationService {
 
         User user = userRepository.findById(approvalRequest.getAdminId())
                 .orElseThrow(() -> new UserNotFound("Organization does not exist"));
+
         if (!organization.getOrganizationStatus().equals(OrganizationStatus.PENDING)) {
             throw new OrganizationAlreadyProcessed("This organization has been processed");
         }
@@ -81,13 +95,37 @@ public class OrganizationServiceImpl implements OrganizationService {
         if (approvalRequest.getUserStatus().equals(UserStatus.ACTIVE))
             user.setStatus(UserStatus.ACTIVE);
 
+        organization.setApprovedAt(LocalDateTime.now());
         Organization savedOrganization = repository.save(organization);
         User savedUser = userRepository.save(user);
 
-        String customerCode = paystackService.createPaystackCustomer(organization);
-        organization.setPayStackCustomerCode(customerCode);
-        paystackService.createVirtualAccount(customerCode, organization);
-        repository.save(organization);
+        if (approvalRequest.getOrganizationStatus().equals(OrganizationStatus.APPROVED)) {
+
+            CreateCustomerRequest createCustomerRequest = new CreateCustomerRequest(organization.getOrganizationEmail(),
+                    organization.getName(), "Organization", organization.getPhoneNumber());
+
+            PaystackCustomerResponse customerResponse = payStackClient.createCustomer
+                    (createCustomerRequest);
+
+            String customerCode = customerResponse.getData().getCustomerCode();
+
+            organization.setPayStackCustomerCode(customerCode);
+            repository.save(organization);
+
+            CreateDvaRequest dvaRequest = new CreateDvaRequest(customerCode);
+
+            PaystackDvaResponse dvaResponse =
+                    payStackClient.createDedicatedAccount(dvaRequest);
+
+            organization.setDvaAccountNumber(dvaResponse.getData().getAccountNumber());
+
+            organization.setDvaBankName(dvaResponse.getData().getBank().getName());
+            String dvaAccountNumber = dvaResponse.getData().getAccountNumber();
+            String dvaBankName = dvaResponse.getData().getBank().getName();
+
+            repository.save(organization);
+        }
+
         return ApprovalMap.mapApprovalResponse(savedOrganization, savedUser);
     }
 
@@ -112,7 +150,7 @@ public class OrganizationServiceImpl implements OrganizationService {
         if (organization.isEmpty()) {
             throw new OrganizationDoesNotExist("There's no organization with the specified id");
         }
-        return Map.mapResponse(organization.get());
+        return map.mapResponse(organization.get());
     }
 
     @Override
@@ -134,7 +172,7 @@ public class OrganizationServiceImpl implements OrganizationService {
             }
         }
 
-        return Map.mapResponse(repository.save(org));
+        return map.mapResponse(repository.save(org));
     }
 
 }
