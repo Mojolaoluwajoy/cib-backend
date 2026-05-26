@@ -10,7 +10,7 @@ import org.app.corporateinternetbanking.transaction.exceptions.InsufficientBalan
 import org.app.corporateinternetbanking.transaction.exceptions.InvalidSignature;
 import org.app.corporateinternetbanking.transaction.exceptions.NotApproved;
 import org.app.corporateinternetbanking.transaction.exceptions.TransactionDoesNotExist;
-import org.app.corporateinternetbanking.transaction.service.WebhookPaymentService;
+import org.app.corporateinternetbanking.transaction.service.WebhookHandler;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,12 +23,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @Tag(name = "Webhook", description = "Handles webhook")
 public class WebhookController {
-    private final WebhookPaymentService webhookPaymentService;
+    private final WebhookHandler webhookHandler;
 
     @Operation(summary = "It handles webhook")
     @PostMapping("/paystack")
     public ResponseEntity<GenericResponse> handleWebhook(@RequestBody PaystackWebhookRequest webhookRequest) throws TransactionDoesNotExist, AccountDoesNotExist, InvalidSignature, NotApproved, InsufficientBalance {
-        return new ResponseEntity<>(GenericResponse.success(webhookPaymentService.handleWebhook(webhookRequest), "Received"), HttpStatus.OK);
+        return new ResponseEntity<>(GenericResponse.success(webhookHandler.handleWebhook(webhookRequest), "Received"), HttpStatus.OK);
     }
 
 }
