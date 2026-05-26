@@ -7,6 +7,9 @@ import org.app.corporateinternetbanking.account.exception.AccountDoesNotExist;
 import org.app.corporateinternetbanking.account.service.AccountService;
 import org.app.corporateinternetbanking.ledger.enums.EntryType;
 import org.app.corporateinternetbanking.ledger.service.LedgerService;
+import org.app.corporateinternetbanking.organization.domain.entity.Organization;
+import org.app.corporateinternetbanking.organization.domain.repository.OrganizationRepository;
+import org.app.corporateinternetbanking.organization.exceptions.OrganizationDoesNotExist;
 import org.app.corporateinternetbanking.transaction.domain.entity.Transaction;
 import org.app.corporateinternetbanking.transaction.domain.repository.TransactionRepository;
 import org.app.corporateinternetbanking.transaction.dto.PaystackWebhookRequest;
@@ -23,10 +26,11 @@ import java.math.BigDecimal;
 
 @Service
 @RequiredArgsConstructor
-public class WebhookPaymentService {
+public class WebhookHandler {
 
     private final LedgerService ledgerService;
     private final AccountRepository accountRepository;
+    private final OrganizationRepository organizationRepository;
     @Autowired
     TransactionRepository transactionRepository;
     @Value("${paystack.secret.key}")
@@ -36,9 +40,40 @@ public class WebhookPaymentService {
     @Autowired
     private AccountService accountService;
 
-    public String handleWebhook(PaystackWebhookRequest webhookRequest) throws AccountDoesNotExist, TransactionDoesNotExist, InsufficientBalance, NotApproved {
+    public String handleWebhook(PaystackWebhookRequest webhookRequest) throws AccountDoesNotExist, TransactionDoesNotExist, InsufficientBalance, NotApproved, OrganizationDoesNotExist {
         String reference = webhookRequest.getData().getReference();
         String event = webhookRequest.getEvent();
+
+        if ("charge.success".equals(event)) {
+            String customerCode = webhookRequest.getData().getCustomerCode();
+            if (customerCode != null) {
+                Organization organization = organizationRepository.findByPaystackCustomerCode(customerCode)
+                        .orElseThrow(() -> new OrganizationDoesNotExist("Organization not found for customer code" + customerCode));
+
+                Account receivingAccount = accountRepository.findFirstByOrganizationAndCurrencyCodeOrderByCreatedAtAsc
+                                (organization, "NGN")
+                        .orElseThrow(() -> new AccountDoesNotExist("No NGN account found for org"));
+
+                BigDecimal amountInNaira = BigDecimal.valueOf(webhookRequest.getData().getAmount()).divide(BigDecimal.valueOf(100));
+
+                accountService.credit(receivingAccount.getId(), amountInNaira);
+
+                Transaction transaction = new Transaction();
+
+                transaction.setDestinationAccount(receivingAccount);
+                transaction.setAmount(amountInNaira);
+                transaction.setReference(reference);
+                transaction.setType(TransactionType.EXTERNAL_DEPOSIT);
+                transaction.setStatus(TransactionStatus.SUCCESS);
+                transactionRepository.save(transaction);
+
+                ledgerService.createEntry(receivingAccount, transaction, EntryType.CREDIT, receivingAccount.getCurrency().getCode(),
+                        amountInNaira, receivingAccount.getTotalBalance());
+
+                return webhookRequest.getData().getReference();
+
+            }
+        }
         Transaction txn = transactionService.findByTransactionReference(reference);
         Account source = txn.getSourceAccount();
         Account destination = txn.getDestinationAccount();
