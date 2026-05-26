@@ -11,5 +11,5 @@ public class UpdateOrganizationRequest {
     private String organizationEmail;
     private String registrationNumber;
     private OrganizationStatus organizationStatus;
-    
+    private String phoneNumber;
 }
