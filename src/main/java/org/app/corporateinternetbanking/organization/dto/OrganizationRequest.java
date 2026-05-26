@@ -9,6 +9,7 @@ public class OrganizationRequest {
 
     private String name;
     private String registrationNumber;
+    private String phoneNumber;
 
     private String firstName;
     private String lastName;
