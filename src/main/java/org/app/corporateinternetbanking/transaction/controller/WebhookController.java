@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.app.corporateinternetbanking.account.exception.AccountDoesNotExist;
 import org.app.corporateinternetbanking.commons.response.GenericResponse;
+import org.app.corporateinternetbanking.organization.exceptions.OrganizationDoesNotExist;
 import org.app.corporateinternetbanking.transaction.dto.PaystackWebhookRequest;
 import org.app.corporateinternetbanking.transaction.exceptions.InsufficientBalance;
 import org.app.corporateinternetbanking.transaction.exceptions.InvalidSignature;
@@ -27,7 +28,7 @@ public class WebhookController {
 
     @Operation(summary = "It handles webhook")
     @PostMapping("/paystack")
-    public ResponseEntity<GenericResponse> handleWebhook(@RequestBody PaystackWebhookRequest webhookRequest) throws TransactionDoesNotExist, AccountDoesNotExist, InvalidSignature, NotApproved, InsufficientBalance {
+    public ResponseEntity<GenericResponse> handleWebhook(@RequestBody PaystackWebhookRequest webhookRequest) throws TransactionDoesNotExist, AccountDoesNotExist, InvalidSignature, NotApproved, InsufficientBalance, OrganizationDoesNotExist {
         return new ResponseEntity<>(GenericResponse.success(webhookHandler.handleWebhook(webhookRequest), "Received"), HttpStatus.OK);
     }
 
