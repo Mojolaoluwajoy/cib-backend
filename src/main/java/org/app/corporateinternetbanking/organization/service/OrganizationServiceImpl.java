@@ -47,9 +47,7 @@ public class OrganizationServiceImpl implements OrganizationService {
 
         Organization organization = Map.mapRequest(request);
         Organization savedOrganization = repository.save(organization);
-        repository.findByRegistrationNumber(request.getRegistrationNumber())
-                .orElseThrow(() -> new OrganizationAlreadyExist("This organization already exist"));
-
+       
         String nin = request.getNin();
         String email = request.getEmail();
         if (userRepository.findByNin(nin).isPresent() || userRepository.findByEmail(email).isPresent()) {
