@@ -17,5 +17,5 @@ public class CreateCustomerRequest {
     @JsonProperty("last_name")
     private String lastName;
 
-    //  private String phone;
+    private String phone;
 }
