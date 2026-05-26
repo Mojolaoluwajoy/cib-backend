@@ -1,5 +1,9 @@
 package org.app.corporateinternetbanking.integration.paystack;
 
+import org.app.corporateinternetbanking.integration.paystack.dto.CreateCustomerRequest;
+import org.app.corporateinternetbanking.integration.paystack.dto.CreateDvaRequest;
+import org.app.corporateinternetbanking.integration.paystack.dto.PaystackCustomerResponse;
+import org.app.corporateinternetbanking.integration.paystack.dto.PaystackDvaResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 
@@ -21,10 +25,10 @@ public interface PayStackClient {
     java.util.Map<String, Object> initiateTransfer(Map<String, Object> body);
 
     @PostMapping("/customer")
-    Map<String, Object> createCustomer(Map<String, Object> body);
+    PaystackCustomerResponse createCustomer(CreateCustomerRequest request);
 
-    @PostMapping("/virtual_account")
-    Map<String, Object> createVirtualAccount(Map<String, Object> body);
+    @PostMapping("/dedicated_account")
+    PaystackDvaResponse createDedicatedAccount(CreateDvaRequest request);
 
 
 }
