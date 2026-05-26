@@ -4,9 +4,11 @@ import lombok.RequiredArgsConstructor;
 import org.app.corporateinternetbanking.user.enums.UserRole;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -43,18 +45,21 @@ public class SecurityConfiguration {
                 "/external/transaction/fund",
                 "/webhook/paystack",};
         httpSecurity.csrf(csrf -> csrf.disable())
+                .cors(Customizer.withDefaults())  // ← add this line
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(publicEndPoints)
-                        .permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()  // ← add this as first rule
+                        .requestMatchers(publicEndPoints).permitAll()
+                        // ... rest of your existing rules
+                        // .requestMatchers(publicEndPoints)
+                        // .permitAll()
                         .requestMatchers("/external/transaction/payout/").hasRole(UserRole.MAKER.name())
                         .requestMatchers("/auth/password/reset").authenticated()
-                        // Update your SecurityConfig to add SUPER_ADMIN everywhere
                         .requestMatchers("/users/invitation/**").hasAnyRole(
                                 UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
                         .requestMatchers("/organizations/findBy", "/organizations/viewAll").hasAnyRole(
                                 UserRole.SUPER_ADMIN.name(), UserRole.ADMIN.name())
                         .requestMatchers("/organizations/approve/**").hasRole(UserRole.SUPER_ADMIN.name())
-                        .requestMatchers("/organizations/**/profile").hasRole(UserRole.SUPER_ADMIN.name())
+                        .requestMatchers("/organizations/profile").hasRole(UserRole.SUPER_ADMIN.name())
                         .requestMatchers("/accounts/create/**").hasAnyRole(
                                 UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
                         .requestMatchers("/accounts/organization/**").hasAnyRole(
@@ -66,8 +71,8 @@ public class SecurityConfiguration {
                         .requestMatchers("/transactions/pending").hasAnyRole(
                                 UserRole.APPROVER.name(), UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
                         .requestMatchers("/users/profile").authenticated()
-                        .requestMatchers("/users/*/profile").hasAnyRole(
-                                UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name()).requestMatchers("/users/**/profile").hasAnyRole(
+                        .requestMatchers("/users/profile").hasAnyRole(
+                                UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name()).requestMatchers("/users/profile").hasAnyRole(
                                 UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
                         .requestMatchers("/currencies/status/**").hasRole(UserRole.SUPER_ADMIN.name())
                         .requestMatchers("/dashboard/stats").authenticated()
