@@ -9,9 +9,11 @@ import org.app.corporateinternetbanking.organization.dto.OrganizationRequest;
 import org.app.corporateinternetbanking.user.domain.entity.User;
 import org.app.corporateinternetbanking.user.domain.repository.UserRepository;
 import org.app.corporateinternetbanking.user.enums.UserRole;
+import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
+@Component
 @RequiredArgsConstructor
 public class Map {
     private final UserRepository userRepository;
@@ -69,6 +71,7 @@ public class Map {
         response.setName(organization.getName());
         response.setRegistrationNumber(organization.getRegistrationNumber());
         response.setOrganizationStatus(organization.getOrganizationStatus());
+        response.setPaystackCustomerCode(organization.getPaystackCustomerCode());
         return response;
 
     }
