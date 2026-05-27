@@ -28,7 +28,7 @@ public class Organization {
     @Enumerated(EnumType.STRING)
     private OrganizationStatus organizationStatus = OrganizationStatus.PENDING;
     private String organizationEmail;
-    private String payStackCustomerCode;
+    private String paystackCustomerCode;
     private String dvaAccountNumber;
     private String dvaBankName;
     private LocalDateTime registeredAt;
