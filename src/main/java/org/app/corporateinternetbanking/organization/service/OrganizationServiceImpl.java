@@ -109,7 +109,7 @@ public class OrganizationServiceImpl implements OrganizationService {
 
             String customerCode = customerResponse.getData().getCustomerCode();
 
-            organization.setPayStackCustomerCode(customerCode);
+            organization.setPaystackCustomerCode(customerCode);
             repository.save(organization);
 
             CreateDvaRequest dvaRequest = new CreateDvaRequest(customerCode);
@@ -120,8 +120,6 @@ public class OrganizationServiceImpl implements OrganizationService {
             organization.setDvaAccountNumber(dvaResponse.getData().getAccountNumber());
 
             organization.setDvaBankName(dvaResponse.getData().getBank().getName());
-            String dvaAccountNumber = dvaResponse.getData().getAccountNumber();
-            String dvaBankName = dvaResponse.getData().getBank().getName();
 
             repository.save(organization);
         }
