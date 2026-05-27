@@ -16,10 +16,7 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
 
     Account findFirstByOrganizationId(Long id);
 
-    Account findOrganizationPaystackCustomerCodeAndIsPrimaryAccountTrue(String customerCode);
-
-    Optional<Account> findByOrganizationAndCurrencyCode(String customerCode);
-
+    
     Optional<Account> findFirstByOrganizationAndCurrencyCodeOrderByCreatedAtAsc(Organization organization, String currencyCode);
 
 }
