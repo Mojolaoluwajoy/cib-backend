@@ -31,6 +31,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     List<User> findAllByOrganization(Organization org);
 
-    Optional<User> findByOrganizationAndRole(
-            Organization organization, UserRole role);
+    Optional<User> findByOrganizationIdAndRole(
+            Long organizationId, UserRole role);
 }
