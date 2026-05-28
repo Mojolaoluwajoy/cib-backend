@@ -41,7 +41,7 @@ public class UserController {
     @Operation(summary = "view all users")
     @GetMapping("/viewAll")
     public ResponseEntity<GenericResponse> viewAlUsers() {
-        List<UserResponse> users = service.ViewAllUsers();
+        List<UserResponse> users = service.ViewAll();
         return new ResponseEntity<>(GenericResponse.success(users, "Users found"), HttpStatus.OK);
     }
 
