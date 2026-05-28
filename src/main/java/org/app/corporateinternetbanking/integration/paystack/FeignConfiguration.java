@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+
 @Configuration
 public class FeignConfiguration {
 
@@ -12,9 +13,9 @@ public class FeignConfiguration {
     private String secretKey;
 
     @Bean
-    public RequestInterceptor requestInterceptor() {
-
+    public RequestInterceptor paystackAuthInterceptor() {
         return template -> {
+            template.removeHeader("Authorization");
             template.header("Authorization", "Bearer " + secretKey);
             template.header("Content-Type", "application/json");
         };
