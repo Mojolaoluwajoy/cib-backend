@@ -11,6 +11,7 @@ import org.app.corporateinternetbanking.user.domain.repository.UserRepository;
 import org.app.corporateinternetbanking.user.enums.UserRole;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Component
@@ -25,6 +26,7 @@ public class Map {
         organization.setRegistrationNumber(request.getRegistrationNumber());
         organization.setOrganizationEmail(request.getOrganizationEmail());
         organization.setPhoneNumber(request.getPhoneNumber());
+        organization.setOrganizationEmail(request.getOrganizationEmail());
         return organization;
     }
 
@@ -63,15 +65,27 @@ public class Map {
 
     public OrganizationOnlyResponse mapResponse(Organization organization) {
         OrganizationOnlyResponse response = new OrganizationOnlyResponse();
-        User admin = userRepository
-                .findByOrganizationAndRole(organization, UserRole.ADMIN)
-                .orElse(null);
+        System.out.println("Looking for admin with org ID: " + organization.getId());
+
+        Optional<User> adminOpt = userRepository.findByOrganizationIdAndRole(organization.getId(), UserRole.ADMIN);
+
+        System.out.println("Admin found: " + adminOpt.isPresent());
+        adminOpt.ifPresent(u -> System.out.println("Admin ID: " + u.getId() + ", Role: " + u.getRole() + ", OrgId: " + u.getOrganization().getId()));
+
+        User admin = adminOpt.orElse(null);
         response.setAdminId(admin != null ? admin.getId() : null);
+
+
+        // User admin = userRepository
+        //       .findByOrganizationIdAndRole(organization.getId(), UserRole.ADMIN)
+        //     .orElse(null);
+        // response.setAdminId(admin != null ? admin.getId() : null);
         response.setId(organization.getId());
         response.setName(organization.getName());
         response.setRegistrationNumber(organization.getRegistrationNumber());
         response.setOrganizationStatus(organization.getOrganizationStatus());
-        response.setPaystackCustomerCode(organization.getPaystackCustomerCode());
+        response.setDvaAccountNumber(organization.getDvaAccountNumber());
+        response.setDvaBankName(organization.getDvaBankName());
         return response;
 
     }
