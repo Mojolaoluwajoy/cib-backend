@@ -11,7 +11,6 @@ public class UserRegistrationRequest {
     private String email;
     private String password;
     private String nin;
-    private String adminKey;
     private String token;
 
 }
