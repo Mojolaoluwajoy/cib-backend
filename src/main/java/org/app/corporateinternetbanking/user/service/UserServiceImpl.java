@@ -13,6 +13,7 @@ import org.app.corporateinternetbanking.user.enums.UserStatus;
 import org.app.corporateinternetbanking.user.exceptions.*;
 import org.app.corporateinternetbanking.user.utils.mapper.PasswordResetResponseMap;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -38,6 +39,9 @@ public class UserServiceImpl implements UserService {
     private OrganizationRepository organizationRepository;
     @Autowired
     private JwtService jwtService;
+
+    @Value("${frontend.base-url}")
+    private String frontendBaseUrl;
 
     @Override
     public String sendInvitationTokenToUser(InvitationRequest invitationRequest) throws UserNotFound, UserAlreadyRegistered {
@@ -151,7 +155,14 @@ public class UserServiceImpl implements UserService {
 
     public void sendMail(InvitationRequest invitationRequest, String token) {
 
-        senderService.sendEmail(invitationRequest.getUserEmail(), "Account Creation Token", "Your verification token is: \n" + token);
+        String registrationLink = frontendBaseUrl + "/complete-registration?token=" + token;
+        String emailBody = "You have been invited to join CIB Platform.\n\n"
+                + "Click the link below to complete your registration:\n"
+                + registrationLink + "\n\n"
+                + "This link contains your invitation token pre-filled.\n"
+                + "You will also need the admin key from your organization.";
+
+        senderService.sendEmail(invitationRequest.getUserEmail(), "CIB INVITE\n\n", emailBody);
 
 
     }
