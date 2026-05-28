@@ -9,6 +9,7 @@ import org.app.corporateinternetbanking.security.JwtService;
 import org.app.corporateinternetbanking.user.domain.entity.User;
 import org.app.corporateinternetbanking.user.domain.repository.UserRepository;
 import org.app.corporateinternetbanking.user.dto.*;
+import org.app.corporateinternetbanking.user.enums.UserRole;
 import org.app.corporateinternetbanking.user.enums.UserStatus;
 import org.app.corporateinternetbanking.user.exceptions.*;
 import org.app.corporateinternetbanking.user.utils.mapper.PasswordResetResponseMap;
@@ -89,8 +90,19 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<UserResponse> ViewAllUsers() {
-        List<User> users = repository.findAll();
+    public List<UserResponse> ViewAll() {
+        String email = SecurityContextHolder.getContext()
+                .getAuthentication().getName();
+        User currentUser = repository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        List<User> users;
+        if (currentUser.getRole() == UserRole.SUPER_ADMIN) {
+            users = repository.findAll();
+        } else {
+            users = repository.findAllByOrganization(currentUser.getOrganization());
+        }
+
         List<UserResponse> userList = new ArrayList<>();
         for (User savedUser : users) {
             UserResponse userResponse = new UserResponse();
@@ -102,7 +114,6 @@ public class UserServiceImpl implements UserService {
             userResponse.setRole(savedUser.getRole());
             userResponse.setStatus(savedUser.getStatus());
             userList.add(userResponse);
-
         }
         return userList;
     }

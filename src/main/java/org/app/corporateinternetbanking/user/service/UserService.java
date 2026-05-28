@@ -13,7 +13,7 @@ public interface UserService {
 
     UserResponse createUserWithToken(UserRegistrationRequest request) throws UserAlreadyRegistered, TokenExpiredOrInvalid, OrganizationDoesNotExist, SuperAdminAlreadyExists, UserNotFound;
 
-    List<UserResponse> ViewAllUsers();
+    List<UserResponse> ViewAll();
 
     String sendInvitationTokenToUser(InvitationRequest request) throws UserNotFound, UserAlreadyRegistered;
 
