@@ -3,9 +3,9 @@ package org.app.corporateinternetbanking.organization.utils.mapper;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import org.app.corporateinternetbanking.organization.domain.entity.Organization;
 import org.app.corporateinternetbanking.organization.dto.OrganizationApprovalRequest;
 import org.app.corporateinternetbanking.organization.dto.OrganizationApprovalResponse;
-import org.app.corporateinternetbanking.organization.domain.entity.Organization;
 import org.app.corporateinternetbanking.user.domain.entity.User;
 
 @Setter
@@ -34,6 +34,7 @@ public class ApprovalMap {
         approvalResponse.setAdminName(user.getFirstName() + " " + user.getLastName());
         approvalResponse.setOrganizationStatus(organization.getOrganizationStatus());
         approvalResponse.setUserStatus(user.getStatus());
+        approvalResponse.setAdminId(user.getId());
         return approvalResponse;
     }
 }
