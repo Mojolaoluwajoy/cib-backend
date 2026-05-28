@@ -58,9 +58,9 @@ public class UserServiceImpl implements UserService {
         user.setRole(invitationRequest.getRole());
         user.setOrganization(organization);
         user.setStatus(UserStatus.INACTIVE);
-        repository.save(user);
         String token = jwtService.generateEmailToken(invitationRequest.getUserEmail());
         sendMail(invitationRequest, token);
+        repository.save(user);
         return invitationRequest.getUserEmail();
     }
 
