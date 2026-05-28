@@ -1,6 +1,6 @@
 package org.app.corporateinternetbanking.user.service;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.app.corporateinternetbanking.email.EmailSenderService;
 import org.app.corporateinternetbanking.organization.domain.repository.OrganizationRepository;
@@ -28,7 +28,7 @@ import static org.app.corporateinternetbanking.user.utils.mapper.UserMap.mapResp
 
 @Slf4j
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
     private final UserRepository repository;
     // private final User user;
