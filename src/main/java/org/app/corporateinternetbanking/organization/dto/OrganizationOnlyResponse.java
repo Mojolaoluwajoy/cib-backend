@@ -12,7 +12,8 @@ public class OrganizationOnlyResponse {
     private Long adminId;
     private String registrationNumber;
     private OrganizationStatus organizationStatus;
-    private String paystackCustomerCode;
+    private String dvaAccountNumber;
+    private String dvaBankName;
 
 
 }
