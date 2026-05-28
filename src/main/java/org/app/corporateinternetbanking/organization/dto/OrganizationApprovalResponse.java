@@ -10,6 +10,7 @@ import org.app.corporateinternetbanking.user.enums.UserStatus;
 public class OrganizationApprovalResponse {
     private String organizationName;
     private String adminName;
+    private Long adminId;          // ← add this
     private OrganizationStatus organizationStatus;
     private UserStatus userStatus;
 }
