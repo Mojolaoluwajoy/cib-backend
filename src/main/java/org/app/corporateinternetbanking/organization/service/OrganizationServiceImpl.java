@@ -168,7 +168,7 @@ public class OrganizationServiceImpl implements OrganizationService {
         if (request.getName() != null) org.setName(request.getName());
         if (request.getOrganizationEmail() != null) org.setOrganizationEmail(request.getOrganizationEmail());
         if (request.getRegistrationNumber() != null) org.setRegistrationNumber(request.getRegistrationNumber());
-
+        if (request.getPhoneNumber() != null) org.setPhoneNumber(request.getPhoneNumber());
         if (request.getOrganizationStatus() != null) {
             org.setOrganizationStatus(request.getOrganizationStatus());
             if (request.getOrganizationStatus() == OrganizationStatus.DISABLED) {
