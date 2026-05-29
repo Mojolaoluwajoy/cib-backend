@@ -21,5 +21,9 @@ public class FeignConfiguration {
         };
     }
 
+    public String getAuthHeader() {
+        return "Bearer " + secretKey;
+    }
+
 
 }
