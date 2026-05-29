@@ -68,6 +68,30 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
+    public AccountResponse createAccountForOrg(Long orgId, AccountRequest request)
+            throws OrganizationDoesNotExist, UserNotFound, CurrencyNotFound, CurrencyNotActive {
+
+        Organization organization = organizationRepository.findById(orgId)
+                .orElseThrow(() -> new OrganizationDoesNotExist("Organization not found"));
+
+        User creator = userService.getCurrentUser();
+
+        Currency currency = currencyRepository.findByCode(request.getCurrencyCode())
+                .orElseThrow(() -> new CurrencyNotFound("This currency does not exist"));
+
+        if (currency.getStatus().equals(CurrencyStatus.INACTIVE)) {
+            throw new CurrencyNotActive("This currency is not available for use right now");
+        }
+
+        Account account = requestMap(request);
+        account.setCurrency(currency);
+        account.setOrganization(organization);
+        account.setCreatedBy(creator);
+
+        return responseMap(repository.save(account));
+    }
+
+    @Override
     public List<AccountResponse> viewAll() {
         List<Account> accounts = repository.findAll();
         List<AccountResponse> accountList = new ArrayList<>();
