@@ -2,6 +2,7 @@ package org.app.corporateinternetbanking.organization.service;
 
 import lombok.RequiredArgsConstructor;
 import org.app.corporateinternetbanking.account.domain.repository.AccountRepository;
+import org.app.corporateinternetbanking.integration.paystack.FeignConfiguration;
 import org.app.corporateinternetbanking.integration.paystack.PayStackClient;
 import org.app.corporateinternetbanking.integration.paystack.dto.CreateCustomerRequest;
 import org.app.corporateinternetbanking.integration.paystack.dto.CreateDvaRequest;
@@ -26,6 +27,7 @@ import org.app.corporateinternetbanking.user.exceptions.UserNotFound;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -46,8 +48,11 @@ public class OrganizationServiceImpl implements OrganizationService {
     UserRepository userRepository;
     @Autowired
     PasswordEncoder passwordEncoder;
+    @Autowired
+    FeignConfiguration feignConfiguration;
 
     @Override
+    @Transactional
     public OrganizationRegistrationResponse registerOrganization(OrganizationRequest request) throws UserAlreadyRegistered, OrganizationAlreadyExist {
 
         if (repository.findByRegistrationNumber(request.getRegistrationNumber()).isPresent() ||
@@ -102,9 +107,10 @@ public class OrganizationServiceImpl implements OrganizationService {
             CreateCustomerRequest createCustomerRequest = new CreateCustomerRequest(organization.getOrganizationEmail(),
                     organization.getName(), "Organization", organization.getPhoneNumber());
 
-            PaystackCustomerResponse customerResponse = payStackClient.createCustomer
-                    (createCustomerRequest);
-
+            PaystackCustomerResponse customerResponse = payStackClient.createCustomer(
+                    feignConfiguration.getAuthHeader(),
+                    createCustomerRequest
+            );
             String customerCode = customerResponse.getData().getCustomerCode();
 
             organization.setPaystackCustomerCode(customerCode);
@@ -112,23 +118,10 @@ public class OrganizationServiceImpl implements OrganizationService {
 
             CreateDvaRequest dvaRequest = new CreateDvaRequest(customerCode);
 
-            PaystackDvaResponse dvaResponse =
-                    payStackClient.createDedicatedAccount(dvaRequest);
-            if (approvalRequest.getOrganizationStatus().equals(OrganizationStatus.APPROVED)) {
-                System.out.println("DEBUG: Reached Paystack block for org: " + organization.getId());
-
-                createCustomerRequest = new CreateCustomerRequest(
-                        organization.getOrganizationEmail(),
-                        organization.getName(),
-                        "Organization",
-                        organization.getPhoneNumber()
-                );
-
-                System.out.println("DEBUG: Calling createCustomer with email: " + organization.getOrganizationEmail());
-            }
-            customerResponse =
-                    payStackClient.createCustomer(createCustomerRequest);
-
+            PaystackDvaResponse dvaResponse = payStackClient.createDedicatedAccount(
+                    feignConfiguration.getAuthHeader(),
+                    dvaRequest
+            );
             System.out.println("DEBUG: Customer response: " + customerResponse);
             System.out.println("DEBUG: Customer code: " + customerResponse.getData().getCustomerCode());
             organization.setDvaAccountNumber(dvaResponse.getData().getAccountNumber());
