@@ -14,6 +14,7 @@ import org.app.corporateinternetbanking.user.exceptions.UserNotFound;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -52,5 +53,20 @@ public class AccountController {
     public ResponseEntity<GenericResponse> getOrgAccounts(@PathVariable Long orgId) throws OrganizationDoesNotExist {
         return ResponseEntity.ok(GenericResponse.success(
                 service.getAccountsByOrganization(orgId), "Accounts found"));
+    }
+
+
+    @Operation(summary = "Create account for a specific organization — SUPER_ADMIN only")
+    @PostMapping("/create/{orgId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<GenericResponse> createAccountForOrg(
+            @PathVariable Long orgId,
+            @RequestBody AccountRequest request)
+            throws OrganizationDoesNotExist, CurrencyNotFound, CurrencyNotActive, UserNotFound {
+        AccountResponse response = service.createAccountForOrg(orgId, request);
+        return new ResponseEntity<>(
+                GenericResponse.success(response, "Account successfully registered"),
+                HttpStatus.OK
+        );
     }
 }
