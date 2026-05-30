@@ -22,6 +22,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -165,17 +166,31 @@ public class UserServiceImpl implements UserService {
 
 
     public void sendMail(InvitationRequest invitationRequest, String token) {
+        String encodedToken;
+        try {
+            encodedToken = java.net.URLEncoder.encode(token, StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            encodedToken = token;
+        }
 
-        String registrationLink = frontendBaseUrl + "/complete-registration?token=" + token;
-        String emailBody = "You have been invited to join CIB Platform.\n\n"
-                + "Click the link below to complete your registration:\n"
-                + registrationLink + "\n\n"
-                + "This link contains your invitation token pre-filled.\n"
-                + "You will also need the admin key from your organization.";
+        String registrationLink = frontendBaseUrl
+                + "/complete-registration?token="
+                + encodedToken;
 
-        senderService.sendEmail(invitationRequest.getUserEmail(), "CIB INVITE\n\n", emailBody);
+        String emailBody =
+                "Hello,\n\n"
+                        + "You have been invited to join CIB Platform.\n\n"
+                        + "Click the link below to complete your registration:\n\n"
+                        + registrationLink + "\n\n"
+                        + "Simply click the link and fill in your personal details to activate your account.\n\n"
+                        + "If you did not expect this invitation, please ignore this email.\n\n"
+                        + "— CIB Platform Team";
 
-
+        senderService.sendEmail(
+                invitationRequest.getUserEmail(),
+                "You have been invited to CIB Platform",
+                emailBody
+        );
     }
 
     public User getCurrentUser() throws UserNotFound {
