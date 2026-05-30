@@ -32,9 +32,12 @@ public class UserMap {
         response.setNin(user.getNin());
         response.setRole(user.getRole());
         response.setStatus(user.getStatus());
-        response.setOrganizationId(new OrganizationId(user.getOrganization().getId()));
+
+        // Only set organizationId if organization is not null
+        if (user.getOrganization() != null) {
+            response.setOrganizationId(new OrganizationId(user.getOrganization().getId()));
+        }
+
         return response;
-
-
     }
 }
