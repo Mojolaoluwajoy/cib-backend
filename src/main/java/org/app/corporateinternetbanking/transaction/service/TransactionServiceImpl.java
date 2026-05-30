@@ -148,12 +148,8 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public List<TransactionResponse> viewPendingTransactions() throws NoPendingTransactionFound {
-
+    public List<TransactionResponse> viewPendingTransactions() {
         List<Transaction> transactions = transactionRepository.findByStatus(TransactionStatus.PENDING);
-        if (transactions.isEmpty()) {
-            throw new NoPendingTransactionFound("There's no pending transaction");
-        }
         return transactions
                 .stream()
                 .map(TransactionMap::mapResponse)
