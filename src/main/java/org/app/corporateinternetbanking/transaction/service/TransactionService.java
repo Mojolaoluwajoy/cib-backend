@@ -19,7 +19,7 @@ public interface TransactionService {
     TransactionResponse initiateTransaction(TransferRequest request) throws InvalidAmount, AccountDoesNotExist, UserNotFound, UnauthorizedAccess, DuplicateTransaction, InsufficientBalance, InvalidAccount, IsNull;
 
 
-    List<TransactionResponse> viewPendingTransactions() throws NoPendingTransactionFound;
+    List<TransactionResponse> viewPendingTransactions();
 
     Page<Transaction> getTransactions(int page, int size, String status);
 
