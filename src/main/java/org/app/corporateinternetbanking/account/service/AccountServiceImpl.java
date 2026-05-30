@@ -20,7 +20,6 @@ import org.app.corporateinternetbanking.transaction.exceptions.InsufficientBalan
 import org.app.corporateinternetbanking.transaction.exceptions.IsNull;
 import org.app.corporateinternetbanking.user.domain.entity.User;
 import org.app.corporateinternetbanking.user.domain.repository.UserRepository;
-import org.app.corporateinternetbanking.user.dto.UserIdDto;
 import org.app.corporateinternetbanking.user.exceptions.UserNotFound;
 import org.app.corporateinternetbanking.user.service.UserServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -96,13 +95,7 @@ public class AccountServiceImpl implements AccountService {
         List<Account> accounts = repository.findAll();
         List<AccountResponse> accountList = new ArrayList<>();
         for (Account savedAccount : accounts) {
-            AccountResponse response = new AccountResponse();
-            response.setTotalBalance(savedAccount.getTotalBalance());
-            response.setAvailableBalance(savedAccount.getAvailableBalance());
-            response.setAccountNumber(savedAccount.getAccountNumber());
-            response.setType(savedAccount.getType());
-            response.setCreatedBy(new UserIdDto(savedAccount.getCreatedBy().getId()));
-            response.setCreatedAt(savedAccount.getCreatedAt());
+            accountList.add(responseMap(savedAccount));
         }
         return accountList;
     }
