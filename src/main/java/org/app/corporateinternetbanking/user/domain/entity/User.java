@@ -33,9 +33,11 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     private UserStatus status;
-    @ManyToOne
+
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "organization_id")
     private Organization organization;
+
     @OneToMany(mappedBy = "createdBy", fetch = FetchType.EAGER)
     private List<Account> createdAccounts;
     @OneToMany(mappedBy = "createdBy", fetch = FetchType.EAGER)
@@ -67,8 +69,11 @@ public class User {
 
     @PrePersist
     public void prePersist() {
-        if (this.status == null)
+        if (this.status == null) {
             this.status = UserStatus.INACTIVE;
+        }
+        if (this.userId == null) {
+            this.userId = java.util.UUID.randomUUID().toString();
+        }
     }
-
 }
