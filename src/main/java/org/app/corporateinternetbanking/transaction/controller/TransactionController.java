@@ -55,9 +55,12 @@ public class TransactionController {
 
     @Operation(summary = "View all pending transactions")
     @GetMapping("pending")
-    public ResponseEntity<GenericResponse> viewPendingTransactions() throws NoPendingTransactionFound {
+    public ResponseEntity<GenericResponse> viewPendingTransactions() {
         List<TransactionResponse> response = service.viewPendingTransactions();
-        return new ResponseEntity<>(GenericResponse.success(response, "Pending transactions found"), HttpStatus.OK);
+        return new ResponseEntity<>(
+                GenericResponse.success(response, "Pending transactions found"),
+                HttpStatus.OK
+        );
     }
 
     @Operation(summary = "View all transactions")
