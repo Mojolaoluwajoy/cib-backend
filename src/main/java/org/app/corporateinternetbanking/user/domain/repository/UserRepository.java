@@ -1,5 +1,6 @@
 package org.app.corporateinternetbanking.user.domain.repository;
 
+import org.app.corporateinternetbanking.organization.domain.entity.Organization;
 import org.app.corporateinternetbanking.user.domain.entity.User;
 import org.app.corporateinternetbanking.user.enums.UserRole;
 import org.springframework.data.domain.Page;
@@ -34,4 +35,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByOrganizationIdAndRole(
             Long organizationId, UserRole role);
+
+    List<User> findAllByOrganization(Organization organization);
 }
