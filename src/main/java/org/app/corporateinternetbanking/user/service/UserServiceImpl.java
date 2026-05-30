@@ -13,6 +13,7 @@ import org.app.corporateinternetbanking.user.enums.UserRole;
 import org.app.corporateinternetbanking.user.enums.UserStatus;
 import org.app.corporateinternetbanking.user.exceptions.*;
 import org.app.corporateinternetbanking.user.utils.mapper.PasswordResetResponseMap;
+import org.app.corporateinternetbanking.user.utils.mapper.UserMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -23,7 +24,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.app.corporateinternetbanking.user.utils.mapper.UserMap.mapResponse;
@@ -99,24 +99,16 @@ public class UserServiceImpl implements UserService {
 
         List<User> users;
         if (currentUser.getRole() == UserRole.SUPER_ADMIN) {
-            users = repository.findAll();
-        } else {
+            // SUPER_ADMIN needs JOIN FETCH to load organization for all users
             users = repository.findAllWithOrganization();
+        } else {
+            // ADMIN is scoped to their own organization
+            users = repository.findAllByOrganization(currentUser.getOrganization());
         }
 
-        List<UserResponse> userList = new ArrayList<>();
-        for (User savedUser : users) {
-            UserResponse userResponse = new UserResponse();
-            userResponse.setUserId(savedUser.getUserId());
-            userResponse.setFirstName(savedUser.getFirstName());
-            userResponse.setLastName(savedUser.getLastName());
-            userResponse.setNin(savedUser.getNin());
-            userResponse.setEmail(savedUser.getEmail());
-            userResponse.setRole(savedUser.getRole());
-            userResponse.setStatus(savedUser.getStatus());
-            userList.add(userResponse);
-        }
-        return userList;
+        return users.stream()
+                .map(UserMap::mapResponse)
+                .collect(java.util.stream.Collectors.toList());
     }
 
     @Override
@@ -149,6 +141,7 @@ public class UserServiceImpl implements UserService {
         if (!jwtService.isEmailTokenValid(forgotPasswordRequest.getToken())) {
             throw new TokenExpiredOrInvalid("Token expired or its invalid");
         }
+        user.setPassword(passwordEncoder.encode(forgotPasswordRequest.getNewPassword()));
         user.setPassword(forgotPasswordRequest.getNewPassword());
         repository.save(user);
         return "Password reset successful";
