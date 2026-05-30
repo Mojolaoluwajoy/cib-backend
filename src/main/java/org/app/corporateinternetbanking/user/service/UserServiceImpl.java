@@ -101,7 +101,7 @@ public class UserServiceImpl implements UserService {
         if (currentUser.getRole() == UserRole.SUPER_ADMIN) {
             users = repository.findAll();
         } else {
-            users = repository.findAllByOrganization(currentUser.getOrganization());
+            users = repository.findAllWithOrganization();
         }
 
         List<UserResponse> userList = new ArrayList<>();
