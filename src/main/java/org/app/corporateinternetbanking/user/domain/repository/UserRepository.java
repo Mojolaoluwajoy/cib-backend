@@ -1,11 +1,11 @@
 package org.app.corporateinternetbanking.user.domain.repository;
 
-import org.app.corporateinternetbanking.organization.domain.entity.Organization;
 import org.app.corporateinternetbanking.user.domain.entity.User;
 import org.app.corporateinternetbanking.user.enums.UserRole;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
@@ -29,7 +29,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     boolean existsByEmail(String userEmail);
 
-    List<User> findAllByOrganization(Organization org);
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.organization")
+    List<User> findAllWithOrganization();
 
     Optional<User> findByOrganizationIdAndRole(
             Long organizationId, UserRole role);
