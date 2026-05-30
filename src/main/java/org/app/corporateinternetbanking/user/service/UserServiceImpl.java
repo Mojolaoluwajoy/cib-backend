@@ -34,7 +34,7 @@ import static org.app.corporateinternetbanking.user.utils.mapper.UserMap.mapResp
 public class UserServiceImpl implements UserService {
     private final UserRepository repository;
     // private final User user;
-    PasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder;
     @Autowired
     EmailSenderService senderService;
     @Autowired
