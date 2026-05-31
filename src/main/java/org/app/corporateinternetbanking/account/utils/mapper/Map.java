@@ -27,12 +27,28 @@ public class Map {
 
     public static AccountResponse responseMap(Account account) {
         AccountResponse response = new AccountResponse();
-        response.setType(account.getType());
-        response.setCurrencyCode(new CurrencyCodeDto(account.getCurrency().getCode()));
-        response.setOrganizationId(new OrganizationId(account.getOrganization().getId()));
         response.setAccountNumber(account.getAccountNumber());
-        response.setCreatedBy(new UserIdDto(account.getCreatedBy().getId()));
+        response.setType(account.getType());
+        response.setTotalBalance(account.getTotalBalance());
+        response.setAvailableBalance(account.getAvailableBalance());
         response.setCreatedAt(account.getCreatedAt());
+
+        if (account.getCurrency() != null) {
+            response.setCurrencyCode(
+                    new CurrencyCodeDto(account.getCurrency().getCode())
+            );
+        }
+        if (account.getOrganization() != null) {
+            response.setOrganizationId(
+                    new OrganizationId(account.getOrganization().getId())
+            );
+            response.setOrganizationName(account.getOrganization().getName());
+        }
+        if (account.getCreatedBy() != null) {
+            response.setCreatedBy(
+                    new UserIdDto(account.getCreatedBy().getId())
+            );
+        }
         return response;
     }
 }
