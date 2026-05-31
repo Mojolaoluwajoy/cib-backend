@@ -6,6 +6,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.app.corporateinternetbanking.user.domain.entity.User;
+import org.app.corporateinternetbanking.user.domain.repository.UserRepository;
+import org.app.corporateinternetbanking.user.enums.UserStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -24,6 +27,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
+    private final UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(
@@ -43,43 +47,48 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         if (email != null && !email.isBlank()) {
 
-            // If token is invalid return 401 immediately
+            // Check token validity first
             if (!jwtService.isTokenValid(token)) {
-                log.warn("Invalid JWT token for email: {}", email);
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.setContentType("application/json");
-                response.getWriter().write(
-                        "{\"status\":401,\"message\":\"Token is invalid or expired\"}"
-                );
+                log.warn("Invalid or expired JWT token for: {}", email);
+                sendUnauthorized(response, "Token is invalid or expired");
                 return;
             }
 
-            UserDetails userDetails;
+            // Check if user still exists in database
+            User user;
             try {
-                userDetails = userDetailsService.loadUserByUsername(email);
+                user = userRepository.findByEmail(email)
+                        .orElseThrow(() -> new UsernameNotFoundException("User not found"));
             } catch (UsernameNotFoundException e) {
-                // User has been deleted from the database
-                log.warn("User not found in database: {}", email);
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.setContentType("application/json");
-                response.getWriter().write(
-                        "{\"status\":401,\"message\":\"User account no longer exists\"}"
-                );
+                log.warn("User no longer exists in database: {}", email);
+                sendUnauthorized(response, "Your account no longer exists");
                 return;
             }
 
-            // Check if the user account is disabled
-            if (!userDetails.isEnabled()) {
-                log.warn("Disabled user attempted access: {}", email);
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.setContentType("application/json");
-                response.getWriter().write(
-                        "{\"status\":401,\"message\":\"User account is disabled\"}"
-                );
+            // Check if user has been deactivated
+            if (user.getStatus() == UserStatus.INACTIVE) {
+                log.warn("Deactivated user attempted access: {}", email);
+                sendUnauthorized(response, "Your account has been deactivated");
                 return;
             }
 
+            // Check if user's organization has been disabled
+            if (user.getOrganization() != null &&
+                    user.getOrganization().getOrganizationStatus() != null) {
+                String orgStatus = user.getOrganization()
+                        .getOrganizationStatus().name();
+                if (orgStatus.equals("DISABLED")) {
+                    log.warn("User from disabled org attempted access: {}", email);
+                    sendUnauthorized(response,
+                            "Your organization has been disabled");
+                    return;
+                }
+            }
+
+            // All checks passed — authenticate the request
             try {
+                UserDetails userDetails =
+                        userDetailsService.loadUserByUsername(email);
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(
                                 userDetails, null, userDetails.getAuthorities()
@@ -88,15 +97,20 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             } catch (Exception e) {
                 log.error("Authentication failed: {}", e.getMessage());
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.setContentType("application/json");
-                response.getWriter().write(
-                        "{\"status\":401,\"message\":\"Authentication failed\"}"
-                );
+                sendUnauthorized(response, "Authentication failed");
                 return;
             }
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private void sendUnauthorized(HttpServletResponse response,
+                                  String message) throws IOException {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json");
+        response.getWriter().write(
+                "{\"success\":false,\"message\":\"" + message + "\"}"
+        );
     }
 }
