@@ -149,7 +149,8 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     public List<TransactionResponse> viewPendingTransactions() {
-        List<Transaction> transactions = transactionRepository.findByStatus(TransactionStatus.PENDING);
+        List<Transaction> transactions =
+                transactionRepository.findByStatus(TransactionStatus.PENDING_APPROVAL);
         return transactions
                 .stream()
                 .map(TransactionMap::mapResponse)
