@@ -76,9 +76,15 @@ public class SecurityConfiguration {
                         .requestMatchers("/accounts/create").hasAnyRole(
                                 UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
                         .requestMatchers("/accounts/all").hasAnyRole(
-                                UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
+                                UserRole.ADMIN.name(),
+                                UserRole.SUPER_ADMIN.name(),
+                                UserRole.MAKER.name(),
+                                UserRole.APPROVER.name())
                         .requestMatchers("/accounts/find").hasAnyRole(
-                                UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
+                                UserRole.ADMIN.name(),
+                                UserRole.SUPER_ADMIN.name(),
+                                UserRole.MAKER.name(),
+                                UserRole.APPROVER.name())
 
                         .requestMatchers("/transactions/initiate").hasAnyRole(
                                 UserRole.MAKER.name(), UserRole.SUPER_ADMIN.name())
