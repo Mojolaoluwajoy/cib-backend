@@ -65,6 +65,11 @@ public class ApprovalService {
         transaction.setProcessedBy(approver);
         if (request.getStatus() == TransactionStatus.REJECTED) {
             transaction.setStatus(TransactionStatus.REJECTED);
+            Account sourceAccount = transaction.getSourceAccount();
+            BigDecimal amount = transaction.getAmount();
+            sourceAccount.setTotalBalance(sourceAccount.getTotalBalance().add(amount));
+            sourceAccount.setAvailableBalance(sourceAccount.getAvailableBalance().add(amount));
+            sourceAccount.setReservedBalance(sourceAccount.getReservedBalance().subtract(amount));
             transactionRepository.save(transaction);
             return mapApprovalResponse(transaction);
         }
@@ -103,6 +108,11 @@ public class ApprovalService {
             BigDecimal newSourceBalance = source.getTotalBalance().subtract(amount);
             source.setTotalBalance(newSourceBalance);
             source.setReservedBalance(source.getReservedBalance().subtract(transaction.getAmount()));
+
+            BigDecimal newDestinationBalance = destination.getTotalBalance().add(amount);
+            BigDecimal newDestinationAvailableBalance = destination.getAvailableBalance().add(amount);
+            destination.setTotalBalance(newDestinationBalance);
+            destination.setAvailableBalance(newDestinationAvailableBalance);
         } else {
             String from = source.getCurrency().getCode();
             String to = destination.getCurrency().getCode();
