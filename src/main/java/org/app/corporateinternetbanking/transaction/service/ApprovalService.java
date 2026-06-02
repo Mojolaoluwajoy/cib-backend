@@ -113,8 +113,13 @@ public class ApprovalService {
             BigDecimal newSourceBalance = source.getTotalBalance().subtract(amount);
             source.setTotalBalance(newSourceBalance);
             ledgerService.createEntry(source, transaction, EntryType.DEBIT, source.getCurrency().getCode(), amount, newSourceBalance);
+
             BigDecimal newDestinationBalance = destination.getTotalBalance().add(convertedAmount);
             destination.setTotalBalance(newDestinationBalance);
+
+            BigDecimal newDestinationAvailableBalance = destination.getAvailableBalance().add(convertedAmount);
+            destination.setAvailableBalance(newDestinationAvailableBalance);
+
             ledgerService.createEntry(destination, transaction, EntryType.CREDIT, destination.getCurrency().getCode(), convertedAmount, newDestinationBalance);
             source.setReservedBalance(source.getReservedBalance().subtract(transaction.getAmount()));
             transaction.setConvertedAmount(convertedAmount);
