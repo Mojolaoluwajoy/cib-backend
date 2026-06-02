@@ -93,9 +93,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/transactions/pending").hasAnyRole(
                                 UserRole.APPROVER.name(), UserRole.ADMIN.name(),
                                 UserRole.SUPER_ADMIN.name())
-                        .requestMatchers("/transactions/transactions").hasAnyRole(
-                                UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
-
+                        .requestMatchers("/transactions/transactions").authenticated()
                         .requestMatchers("/external/payout").hasAnyRole(
                                 UserRole.MAKER.name(), UserRole.SUPER_ADMIN.name())
 
