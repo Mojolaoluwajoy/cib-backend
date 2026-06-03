@@ -75,7 +75,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     private Transaction validateInternalTransaction(TransferRequest request) throws InvalidAccount, IsNull, AccountDoesNotExist, UserNotFound, InvalidAmount, UnauthorizedAccess, DuplicateTransaction {
-        Transaction transaction = getTransaction(request);
+        Transaction transaction = validateTransaction(request);
 
         Account source = validateAccountNumber(request.getSourceAccount());
         Account destination = validateAccountNumber(request.getDestinationAccount());
@@ -94,7 +94,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     private Transaction validateFunding(TransferRequest request) throws IsNull, AccountDoesNotExist, UserNotFound, InvalidAmount, UnauthorizedAccess, DuplicateTransaction {
-        Transaction transaction = getTransaction(request);
+        Transaction transaction = validateTransaction(request);
 
         Account destination = validateAccountNumber(request.getDestinationAccount());
         transaction.setDestinationAccount(destination);
@@ -104,7 +104,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     private Transaction validatePayout(TransferRequest request) throws IsNull, AccountDoesNotExist, UserNotFound, InvalidAmount, UnauthorizedAccess, DuplicateTransaction {
-        Transaction transaction = getTransaction(request);
+        Transaction transaction = validateTransaction(request);
 
         Account source = validateAccountNumber(request.getSourceAccount());
         transaction.setSourceAccount(source);
@@ -120,7 +120,7 @@ public class TransactionServiceImpl implements TransactionService {
 
     }
 
-    private Transaction getTransaction(TransferRequest request) throws DuplicateTransaction, InvalidAmount, UserNotFound, UnauthorizedAccess {
+    private Transaction validateTransaction(TransferRequest request) throws DuplicateTransaction, InvalidAmount, UserNotFound, UnauthorizedAccess {
         Optional<Transaction> existingTransaction = transactionRepository.findByIdempotencyKey(request.getIdempotencyKey());
 
         if (existingTransaction.isPresent()) {
@@ -158,14 +158,19 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public Page<Transaction> getTransactions(int page, int size, String status) {
+    public Page<TransactionResponse> getTransactions(int page, int size, String status) {
         Pageable pageable = PageRequest.of(page, size);
-        if (status != null) {
-            return transactionRepository.findByStatus(status, pageable);
+        if (status != null && !status.isBlank()) {
+            try {
+                TransactionStatus txnStatus = TransactionStatus.valueOf(status.toUpperCase());
+                return transactionRepository.findByStatus(txnStatus, pageable)
+                        .map(TransactionMap::mapResponse);
+            } catch (IllegalArgumentException e) {
+
+            }
         }
-        return transactionRepository.findAll(pageable);
-
-
+        return transactionRepository.findAll(pageable)
+                .map(TransactionMap::mapResponse);
     }
 
     @Transactional

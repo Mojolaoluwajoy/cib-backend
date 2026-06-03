@@ -21,8 +21,7 @@ public interface TransactionService {
 
     List<TransactionResponse> viewPendingTransactions();
 
-    Page<Transaction> getTransactions(int page, int size, String status);
-
+    Page<TransactionResponse> getTransactions(int page, int size, String status);
 
     void expirePendingTransactions();
 
