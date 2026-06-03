@@ -66,8 +66,17 @@ public class TransactionController {
     @Operation(summary = "View all transactions")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'MAKER', 'APPROVER')")
     @GetMapping("/transactions")
-    public ResponseEntity<GenericResponse> getTransactions(@RequestParam int page, @RequestParam int size, @RequestParam(required = false) String status) {
-        return new ResponseEntity<>(GenericResponse.success(service.getTransactions(page, size, status), "Transaction found"), HttpStatus.OK);
+    public ResponseEntity<GenericResponse> getTransactions(
+            @RequestParam int page,
+            @RequestParam int size,
+            @RequestParam(required = false) String status) {
+        return new ResponseEntity<>(
+                GenericResponse.success(
+                        service.getTransactions(page, size, status),
+                        "Transactions found"
+                ),
+                HttpStatus.OK
+        );
     }
 
     //
