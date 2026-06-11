@@ -15,8 +15,8 @@ public class DashboardStats {
     private int pendingTransactions;
     private BigDecimal transferVolume;
     private BigDecimal payoutVolume;
-    private int totalOrganizations;     // for SUPER_ADMIN
-    private int approvedOrganizations;  // for SUPER_ADMIN
-    private int rejectedOrganizations;  // for SUPER_ADMIN
+    private int totalOrganizations;
+    private int approvedOrganizations;
+    private int rejectedOrganizations;
     private int disabledOrganizations;
 }
