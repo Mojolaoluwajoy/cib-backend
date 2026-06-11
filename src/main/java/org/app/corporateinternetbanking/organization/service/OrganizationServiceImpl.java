@@ -17,7 +17,6 @@ import org.app.corporateinternetbanking.organization.exceptions.OrganizationAlre
 import org.app.corporateinternetbanking.organization.exceptions.OrganizationDoesNotExist;
 import org.app.corporateinternetbanking.organization.utils.mapper.ApprovalMap;
 import org.app.corporateinternetbanking.organization.utils.mapper.Map;
-import org.app.corporateinternetbanking.transaction.service.PaystackService;
 import org.app.corporateinternetbanking.user.domain.entity.User;
 import org.app.corporateinternetbanking.user.domain.repository.UserRepository;
 import org.app.corporateinternetbanking.user.enums.UserRole;
@@ -38,7 +37,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OrganizationServiceImpl implements OrganizationService {
 
-    private final PaystackService paystackService;
     private final PayStackClient payStackClient;
     private final AccountRepository accountRepository;
     private final Map map;
