@@ -33,7 +33,6 @@ import static org.app.corporateinternetbanking.user.utils.mapper.UserMap.mapResp
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
     private final UserRepository repository;
-    // private final User user;
     private final PasswordEncoder passwordEncoder;
     @Autowired
     EmailSenderService senderService;
