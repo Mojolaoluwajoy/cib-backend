@@ -19,7 +19,6 @@ import org.app.corporateinternetbanking.organization.exceptions.OrganizationDoes
 import org.app.corporateinternetbanking.transaction.exceptions.InsufficientBalance;
 import org.app.corporateinternetbanking.transaction.exceptions.IsNull;
 import org.app.corporateinternetbanking.user.domain.entity.User;
-import org.app.corporateinternetbanking.user.domain.repository.UserRepository;
 import org.app.corporateinternetbanking.user.exceptions.UserNotFound;
 import org.app.corporateinternetbanking.user.service.UserServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +35,6 @@ import static org.app.corporateinternetbanking.account.utils.mapper.Map.response
 @org.springframework.stereotype.Service
 @AllArgsConstructor
 public class AccountServiceImpl implements AccountService {
-    private final UserRepository userRepository;
     private final UserServiceImpl userService;
     @Autowired
     AccountRepository repository;
