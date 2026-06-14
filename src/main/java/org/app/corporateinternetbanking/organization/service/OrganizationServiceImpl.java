@@ -1,7 +1,6 @@
 package org.app.corporateinternetbanking.organization.service;
 
 import lombok.RequiredArgsConstructor;
-import org.app.corporateinternetbanking.account.domain.repository.AccountRepository;
 import org.app.corporateinternetbanking.integration.paystack.FeignConfiguration;
 import org.app.corporateinternetbanking.integration.paystack.PayStackClient;
 import org.app.corporateinternetbanking.integration.paystack.dto.CreateCustomerRequest;
@@ -38,7 +37,6 @@ import java.util.stream.Collectors;
 public class OrganizationServiceImpl implements OrganizationService {
 
     private final PayStackClient payStackClient;
-    private final AccountRepository accountRepository;
     private final Map map;
     @Autowired
     OrganizationRepository repository;
