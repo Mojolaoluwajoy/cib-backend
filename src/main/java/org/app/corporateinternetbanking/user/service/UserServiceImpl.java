@@ -3,7 +3,6 @@ package org.app.corporateinternetbanking.user.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.app.corporateinternetbanking.email.EmailSenderService;
-import org.app.corporateinternetbanking.organization.domain.repository.OrganizationRepository;
 import org.app.corporateinternetbanking.organization.exceptions.OrganizationDoesNotExist;
 import org.app.corporateinternetbanking.security.JwtService;
 import org.app.corporateinternetbanking.user.domain.entity.User;
@@ -36,8 +35,6 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     @Autowired
     EmailSenderService senderService;
-    @Autowired
-    private OrganizationRepository organizationRepository;
     @Autowired
     private JwtService jwtService;
 
