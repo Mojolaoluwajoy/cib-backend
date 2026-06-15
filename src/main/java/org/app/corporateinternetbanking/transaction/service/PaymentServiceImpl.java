@@ -3,7 +3,6 @@ package org.app.corporateinternetbanking.transaction.service;
 import lombok.RequiredArgsConstructor;
 import org.app.corporateinternetbanking.account.exception.AccountDoesNotExist;
 import org.app.corporateinternetbanking.account.exception.InvalidAccount;
-import org.app.corporateinternetbanking.account.service.AccountService;
 import org.app.corporateinternetbanking.integration.paystack.PayStackClient;
 import org.app.corporateinternetbanking.transaction.dto.FundRequest;
 import org.app.corporateinternetbanking.transaction.dto.TransactionResponse;
@@ -26,7 +25,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
 
-    private final AccountService accountService;
 
     private final TransactionService transactionService;
     private final PayStackClient payStackClient;
