@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.app.corporateinternetbanking.account.domain.entity.Account;
 import org.app.corporateinternetbanking.account.exception.AccountDoesNotExist;
-import org.app.corporateinternetbanking.account.service.AccountService;
 import org.app.corporateinternetbanking.currency.exceptions.CurrencyNotFound;
 import org.app.corporateinternetbanking.integration.currency.CurrencyExchangeService;
 import org.app.corporateinternetbanking.integration.paystack.PayStackClient;
@@ -18,7 +17,6 @@ import org.app.corporateinternetbanking.transaction.enums.TransactionStatus;
 import org.app.corporateinternetbanking.transaction.enums.TransactionType;
 import org.app.corporateinternetbanking.transaction.exceptions.*;
 import org.app.corporateinternetbanking.user.domain.entity.User;
-import org.app.corporateinternetbanking.user.domain.repository.UserRepository;
 import org.app.corporateinternetbanking.user.enums.UserRole;
 import org.app.corporateinternetbanking.user.exceptions.UnauthorizedAccess;
 import org.app.corporateinternetbanking.user.exceptions.UserNotFound;
@@ -39,10 +37,8 @@ import static org.app.corporateinternetbanking.transaction.utils.mapper.Approval
 public class ApprovalService {
 
     private final TransactionRepository transactionRepository;
-    private final UserRepository userRepository;
     private final CurrencyExchangeService currencyService;
     private final LedgerService ledgerService;
-    private final AccountService accountService;
     private final PayStackClient payStackClient;
     private final UserServiceImpl userService;
 
