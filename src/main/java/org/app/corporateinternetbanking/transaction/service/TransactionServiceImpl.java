@@ -20,7 +20,6 @@ import org.app.corporateinternetbanking.transaction.enums.TransactionStatus;
 import org.app.corporateinternetbanking.transaction.exceptions.*;
 import org.app.corporateinternetbanking.transaction.utils.mapper.TransactionMap;
 import org.app.corporateinternetbanking.user.domain.entity.User;
-import org.app.corporateinternetbanking.user.domain.repository.UserRepository;
 import org.app.corporateinternetbanking.user.enums.UserRole;
 import org.app.corporateinternetbanking.user.exceptions.UnauthorizedAccess;
 import org.app.corporateinternetbanking.user.exceptions.UserNotFound;
@@ -50,8 +49,6 @@ public class TransactionServiceImpl implements TransactionService {
     AccountRepository accountRepository;
     @Autowired
     TransactionRepository transactionRepository;
-    @Autowired
-    UserRepository userRepository;
 
     @Override
     public TransactionResponse initiateTransaction(TransferRequest request) throws InvalidAmount, AccountDoesNotExist, UserNotFound, UnauthorizedAccess, DuplicateTransaction, InsufficientBalance, InvalidAccount, IsNull {
