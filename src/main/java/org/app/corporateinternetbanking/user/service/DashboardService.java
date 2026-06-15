@@ -11,7 +11,6 @@ import org.app.corporateinternetbanking.transaction.domain.repository.Transactio
 import org.app.corporateinternetbanking.transaction.enums.TransactionStatus;
 import org.app.corporateinternetbanking.transaction.enums.TransactionType;
 import org.app.corporateinternetbanking.user.domain.entity.User;
-import org.app.corporateinternetbanking.user.domain.repository.UserRepository;
 import org.app.corporateinternetbanking.user.dto.DashboardStats;
 import org.app.corporateinternetbanking.user.enums.UserRole;
 import org.app.corporateinternetbanking.user.exceptions.UserNotFound;
@@ -28,7 +27,6 @@ public class DashboardService {
     private final AccountRepository accountRepository;
     private final OrganizationRepository organizationRepository;
     private final TransactionRepository transactionRepository;
-    private final UserRepository userRepository;
     private final UserServiceImpl userService;
 
     public DashboardStats getStats() throws UserNotFound {
