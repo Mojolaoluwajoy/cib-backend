@@ -5,7 +5,6 @@ import org.app.corporateinternetbanking.email.EmailSenderService;
 import org.app.corporateinternetbanking.notification.domain.entity.Notification;
 import org.app.corporateinternetbanking.notification.domain.repository.NotificationRepository;
 import org.app.corporateinternetbanking.notification.enums.NotificationStatus;
-import org.app.corporateinternetbanking.transaction.domain.repository.TransactionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -19,8 +18,6 @@ public class NotificationServiceImpl implements NotificationService {
     NotificationRepository notificationRepository;
     @Autowired
     EmailSenderService emailSenderService;
-    @Autowired
-    TransactionRepository transactionRepository;
 
     @Override
     public void createNotification(String recipient, String message) {
