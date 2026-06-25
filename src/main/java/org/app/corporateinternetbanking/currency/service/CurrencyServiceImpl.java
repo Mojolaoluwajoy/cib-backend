@@ -34,21 +34,7 @@ public class CurrencyServiceImpl implements CurrencyService {
         return CurrencyMap.mapCurrencyResponse(currency);
     }
 
-    //    @Override
-//    public List<CurrencyResponse> viewActiveCurrencies() {
-//        List<Currency> currencies = repository.findByStatus(CurrencyStatus.ACTIVE);
-//        List<CurrencyResponse> responseList =new ArrayList<>();
-//        for (Currency currency : currencies) {
-//            CurrencyResponse currencyResponse = new CurrencyResponse();
-//            currencyResponse.setCode(currency.getCode());
-//            currencyResponse.setName(currency.getName());
-//            currencyResponse.setStatus(currency.getStatus());
-//            currencyResponse.setSymbol(currency.getSymbol());
-//            responseList.add(currencyResponse);
-//
-//                  }
-//        return responseList;
-//    }
+
     public List<CurrencyResponse> viewAll() {
         return repository.findAll()
                 .stream()
