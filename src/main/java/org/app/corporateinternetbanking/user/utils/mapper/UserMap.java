@@ -33,7 +33,7 @@ public class UserMap {
         response.setRole(user.getRole());
         response.setStatus(user.getStatus());
 
-        // Only set organizationId if organization is not null
+
         if (user.getOrganization() != null) {
             response.setOrganizationId(new OrganizationId(user.getOrganization().getId()));
         }
