@@ -18,6 +18,8 @@
 
   <properties>
     <java.version>17</java.version>
+    <!-- Newer than Spring Boot 3.3's default: older clients are rejected by Docker Engine 29+ -->
+    <testcontainers.version>1.21.4</testcontainers.version>
   </properties>
   <!-- Spring cloud version control -->
   <dependencyManagement>
@@ -114,6 +116,12 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- Throwaway Postgres in Docker for integration tests -->
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>postgresql</artifactId>
       <scope>test</scope>
     </dependency>
 
