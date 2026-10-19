@@ -224,12 +224,12 @@ public class TransactionServiceImpl implements TransactionService {
     @Override
     public BigDecimal calculateTransactionVolume() {
         log.info("Calculating 24 hours window transaction volume");
-        LocalDateTime end = LocalDateTime.now().minusHours(24);
-        LocalDateTime start = LocalDateTime.now();
-        List<Transaction> expiredTransactions =
+        LocalDateTime end = LocalDateTime.now();
+        LocalDateTime start = end.minusHours(24);
+        List<Transaction> successfulTransactions =
                 transactionRepository.findByCreatedAtBetweenAndStatus(start, end, TransactionStatus.SUCCESS);
         BigDecimal transactionVolume = BigDecimal.ZERO;
-        for (Transaction transaction : expiredTransactions) {
+        for (Transaction transaction : successfulTransactions) {
             transactionVolume = transactionVolume.add(transaction.getAmount());
         }
 
