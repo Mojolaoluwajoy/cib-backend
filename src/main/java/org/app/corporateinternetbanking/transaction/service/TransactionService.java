@@ -25,6 +25,8 @@ public interface TransactionService {
 
     void expirePendingTransactions();
 
+    void expireUnapprovedTransactions();
+
     BigDecimal calculateTransactionVolume();
 
     void markSuccess(String reference) throws TransactionDoesNotExist;

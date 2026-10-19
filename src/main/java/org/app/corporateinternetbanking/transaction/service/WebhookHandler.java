@@ -17,6 +17,7 @@ import org.app.corporateinternetbanking.account.domain.entity.Account;
 import org.app.corporateinternetbanking.account.domain.repository.AccountRepository;
 import org.app.corporateinternetbanking.account.exception.AccountDoesNotExist;
 import org.app.corporateinternetbanking.account.service.AccountService;
+import org.app.corporateinternetbanking.commons.locking.RowLocks;
 import org.app.corporateinternetbanking.integration.paystack.PayStackClient;
 import org.app.corporateinternetbanking.ledger.enums.EntryType;
 import org.app.corporateinternetbanking.ledger.service.LedgerService;
@@ -44,6 +45,7 @@ public class WebhookHandler {
     private final TransactionRepository transactionRepository;
     private final AccountService accountService;
     private final ObjectMapper objectMapper;
+    private final RowLocks rowLocks;
 
     @Value("${paystack.secret.key}")
     private String secretKey;
@@ -115,6 +117,8 @@ public class WebhookHandler {
                     txn.getReference());
             return;
         }
+        // Lock before checking the status so a retried webhook arriving concurrently waits, then sees SUCCESS.
+        rowLocks.lockTransaction(txn);
         if (txn.getStatus() != TransactionStatus.PENDING) {
             log.info("Funding {} already {}, ignoring duplicate webhook", txn.getReference(), txn.getStatus());
             return;
@@ -164,6 +168,14 @@ public class WebhookHandler {
                 .orElseThrow(() -> new AccountDoesNotExist(
                         "No NGN account found for org " + organization.get().getId()));
 
+        // Two deliveries of the same deposit can arrive together: serialize them on the account,
+        // then re-check under the lock whether the first one already recorded it.
+        rowLocks.lockAccounts(receivingAccount);
+        if (transactionRepository.findByReference(data.getReference()).isPresent()) {
+            log.info("DVA deposit {} already recorded, ignoring duplicate webhook", data.getReference());
+            return;
+        }
+
         BigDecimal amountInNaira = BigDecimal.valueOf(data.getAmount()).movePointLeft(2);
         accountService.credit(receivingAccount.getId(), amountInNaira);
 
@@ -193,6 +205,7 @@ public class WebhookHandler {
             return;
         }
         Transaction txn = existing.get();
+        rowLocks.lockTransaction(txn);
         if (txn.getStatus() == TransactionStatus.PENDING_APPROVAL) {
             // Approval is still being committed; throw so Paystack retries shortly.
             throw new NotApproved("Payout " + reference + " is not yet approved");
@@ -203,6 +216,7 @@ public class WebhookHandler {
         }
 
         Account source = txn.getSourceAccount();
+        rowLocks.lockAccounts(source);
         BigDecimal amount = txn.getAmount();
         source.setReservedBalance(source.getReservedBalance().subtract(amount));
         if (succeeded) {

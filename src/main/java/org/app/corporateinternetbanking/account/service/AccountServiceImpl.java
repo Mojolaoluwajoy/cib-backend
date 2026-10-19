@@ -15,6 +15,7 @@ import org.app.corporateinternetbanking.account.dto.AccountRequest;
 import org.app.corporateinternetbanking.account.dto.AccountResponse;
 import org.app.corporateinternetbanking.account.exception.AccountDoesNotExist;
 import org.app.corporateinternetbanking.account.utils.mapper.Map;
+import org.app.corporateinternetbanking.commons.locking.RowLocks;
 import org.app.corporateinternetbanking.currency.domain.entity.Currency;
 import org.app.corporateinternetbanking.currency.domain.repository.CurrencyRepository;
 import org.app.corporateinternetbanking.currency.enums.CurrencyStatus;
@@ -32,11 +33,13 @@ import org.app.corporateinternetbanking.user.exceptions.UnauthorizedAccess;
 import org.app.corporateinternetbanking.user.exceptions.UserNotFound;
 import org.app.corporateinternetbanking.user.service.UserServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 @org.springframework.stereotype.Service
 @AllArgsConstructor
 public class AccountServiceImpl implements AccountService {
     private final UserServiceImpl userService;
+    private final RowLocks rowLocks;
 
     @Autowired
     AccountRepository repository;
@@ -123,9 +126,11 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void credit(Long accountId, BigDecimal amount) throws AccountDoesNotExist {
         Account account =
                 repository.findById(accountId).orElseThrow(() -> new AccountDoesNotExist("Account not found"));
+        rowLocks.lockAccounts(account);
 
         account.setAvailableBalance(account.getAvailableBalance().add(amount));
         account.setTotalBalance(account.getTotalBalance().add(amount));
@@ -133,9 +138,11 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void debit(Long accountId, BigDecimal amount) throws AccountDoesNotExist, InsufficientBalance {
         Account account =
                 repository.findById(accountId).orElseThrow(() -> new AccountDoesNotExist("Account not found"));
+        rowLocks.lockAccounts(account);
 
         if (account.getTotalBalance().compareTo(amount) < 0) {
             throw new InsufficientBalance("Insufficient funds");
