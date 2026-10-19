@@ -30,8 +30,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(UnauthorizedAccess.class)
     public ResponseEntity<GenericResponse> handleNotAnAdminException(UnauthorizedAccess exception) {
-        log.error("Not a super admin: {}", exception.getMessage());
-        return new ResponseEntity<>(GenericResponse.failed(exception.getMessage()), HttpStatus.BAD_REQUEST);
+        log.error("Unauthorized access: {}", exception.getMessage());
+        return new ResponseEntity<>(GenericResponse.failed(exception.getMessage()), HttpStatus.FORBIDDEN);
     }
 
     @ExceptionHandler(AccountDoesNotExist.class)

@@ -67,6 +67,8 @@ public class SecurityConfiguration {
                         .hasAnyRole(UserRole.SUPER_ADMIN.name(), UserRole.ADMIN.name())
                         .requestMatchers("/organizations/viewAll")
                         .hasAnyRole(UserRole.SUPER_ADMIN.name(), UserRole.ADMIN.name())
+                        .requestMatchers(HttpMethod.PUT, "/organizations/*/profile")
+                        .hasAnyRole(UserRole.SUPER_ADMIN.name(), UserRole.ADMIN.name())
                         .requestMatchers("/organizations/approve")
                         .hasRole(UserRole.SUPER_ADMIN.name())
                         .requestMatchers("/accounts/create")

@@ -20,12 +20,15 @@ import org.app.corporateinternetbanking.organization.exceptions.OrganizationAlre
 import org.app.corporateinternetbanking.organization.exceptions.OrganizationDoesNotExist;
 import org.app.corporateinternetbanking.organization.utils.mapper.ApprovalMap;
 import org.app.corporateinternetbanking.organization.utils.mapper.Map;
+import org.app.corporateinternetbanking.security.TenantAccess;
 import org.app.corporateinternetbanking.user.domain.entity.User;
 import org.app.corporateinternetbanking.user.domain.repository.UserRepository;
 import org.app.corporateinternetbanking.user.enums.UserRole;
 import org.app.corporateinternetbanking.user.enums.UserStatus;
+import org.app.corporateinternetbanking.user.exceptions.UnauthorizedAccess;
 import org.app.corporateinternetbanking.user.exceptions.UserAlreadyRegistered;
 import org.app.corporateinternetbanking.user.exceptions.UserNotFound;
+import org.app.corporateinternetbanking.user.service.UserServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -39,6 +42,7 @@ public class OrganizationServiceImpl implements OrganizationService {
 
     private final PayStackClient payStackClient;
     private final Map map;
+    private final UserServiceImpl userService;
 
     @Autowired
     OrganizationRepository repository;
@@ -140,24 +144,44 @@ public class OrganizationServiceImpl implements OrganizationService {
     }
 
     @Override
-    public List<OrganizationOnlyResponse> viewAll() {
+    public List<OrganizationOnlyResponse> viewAll() throws UserNotFound {
+        User currentUser = userService.getCurrentUser();
+        if (!TenantAccess.isSuperAdmin(currentUser)) {
+            Organization own = currentUser.getOrganization();
+            return own == null ? List.of() : List.of(map.mapResponse(own));
+        }
         return repository.findAll().stream().map(map::mapResponse).collect(Collectors.toList());
     }
 
     @Override
-    public OrganizationOnlyResponse viewById(long id) throws OrganizationDoesNotExist {
+    public OrganizationOnlyResponse viewById(long id)
+            throws OrganizationDoesNotExist, UserNotFound, UnauthorizedAccess {
         Optional<Organization> organization = repository.findById(id);
         if (organization.isEmpty()) {
             throw new OrganizationDoesNotExist("There's no organization with the specified id");
         }
+        TenantAccess.assertCanAccess(userService.getCurrentUser(), organization.get());
         return map.mapResponse(organization.get());
     }
 
     @Override
     public OrganizationOnlyResponse updateOrganization(Long orgId, UpdateOrganizationRequest request)
-            throws OrganizationDoesNotExist {
+            throws OrganizationDoesNotExist, UserNotFound, UnauthorizedAccess {
         Organization org =
                 repository.findById(orgId).orElseThrow(() -> new OrganizationDoesNotExist("Organization not found"));
+
+        // SUPER_ADMIN can edit any organization; an ADMIN only their own, and never its status
+        // (approving, rejecting or disabling an organization is a platform decision).
+        User currentUser = userService.getCurrentUser();
+        if (!TenantAccess.isSuperAdmin(currentUser)) {
+            if (currentUser.getRole() != UserRole.ADMIN) {
+                throw new UnauthorizedAccess("Only an admin can update the organization profile");
+            }
+            TenantAccess.assertMemberOf(currentUser, org);
+            if (request.getOrganizationStatus() != null) {
+                throw new UnauthorizedAccess("Only the super admin can change an organization's status");
+            }
+        }
 
         if (request.getName() != null) org.setName(request.getName());
         if (request.getOrganizationEmail() != null) org.setOrganizationEmail(request.getOrganizationEmail());

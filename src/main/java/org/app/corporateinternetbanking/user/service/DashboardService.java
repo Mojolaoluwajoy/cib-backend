@@ -62,9 +62,10 @@ public class DashboardService {
 
         List<Account> accounts = accountRepository.findAllByOrganization(org);
 
-        List<Transaction> pendingTxns = transactionRepository.findAllByStatus(TransactionStatus.PENDING);
+        List<Transaction> pendingTxns =
+                transactionRepository.findAllForOrganizationByStatus(org, TransactionStatus.PENDING);
 
-        List<Transaction> allTxns = transactionRepository.findAll();
+        List<Transaction> allTxns = transactionRepository.findAllForOrganization(org);
 
         BigDecimal transferVolume = allTxns.stream()
                 .filter(t -> t.getType() == TransactionType.INTERNAL_TRANSFER)

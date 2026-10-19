@@ -11,6 +11,7 @@ import org.app.corporateinternetbanking.commons.response.GenericResponse;
 import org.app.corporateinternetbanking.currency.exceptions.CurrencyNotActive;
 import org.app.corporateinternetbanking.currency.exceptions.CurrencyNotFound;
 import org.app.corporateinternetbanking.organization.exceptions.OrganizationDoesNotExist;
+import org.app.corporateinternetbanking.user.exceptions.UnauthorizedAccess;
 import org.app.corporateinternetbanking.user.exceptions.UserNotFound;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -36,7 +37,8 @@ public class AccountController {
 
     @Operation(summary = "Find account by id")
     @PostMapping("/find")
-    public ResponseEntity<GenericResponse> findById(@RequestBody Long id) throws AccountDoesNotExist {
+    public ResponseEntity<GenericResponse> findById(@RequestBody Long id)
+            throws AccountDoesNotExist, UserNotFound, UnauthorizedAccess {
         AccountResponse response = null;
         response = service.findById(id);
         return new ResponseEntity<>(
@@ -45,14 +47,15 @@ public class AccountController {
 
     @Operation(summary = "View all accounts")
     @GetMapping("/all")
-    public ResponseEntity<GenericResponse> viewAll() {
+    public ResponseEntity<GenericResponse> viewAll() throws UserNotFound {
         List<AccountResponse> response = service.viewAll();
         return new ResponseEntity<>(GenericResponse.success(response, "Accounts found!"), HttpStatus.OK);
     }
 
-    // In AccountController
+    @Operation(summary = "View an organization's accounts")
     @GetMapping("/organization/{orgId}")
-    public ResponseEntity<GenericResponse> getOrgAccounts(@PathVariable Long orgId) throws OrganizationDoesNotExist {
+    public ResponseEntity<GenericResponse> getOrgAccounts(@PathVariable Long orgId)
+            throws OrganizationDoesNotExist, UserNotFound, UnauthorizedAccess {
         return ResponseEntity.ok(GenericResponse.success(service.getAccountsByOrganization(orgId), "Accounts found"));
     }
 
