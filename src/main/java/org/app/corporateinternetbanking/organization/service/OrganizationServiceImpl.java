@@ -1,5 +1,9 @@
 package org.app.corporateinternetbanking.organization.service;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.app.corporateinternetbanking.integration.paystack.PayStackClient;
@@ -28,11 +32,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -40,21 +39,26 @@ public class OrganizationServiceImpl implements OrganizationService {
 
     private final PayStackClient payStackClient;
     private final Map map;
+
     @Autowired
     OrganizationRepository repository;
+
     @Autowired
     UserRepository userRepository;
+
     @Autowired
     PasswordEncoder passwordEncoder;
+
     @Value("${paystack.dva.preferred-bank}")
     private String dvaPreferredBank;
 
     @Override
     @Transactional
-    public OrganizationRegistrationResponse registerOrganization(OrganizationRequest request) throws UserAlreadyRegistered, OrganizationAlreadyExist {
+    public OrganizationRegistrationResponse registerOrganization(OrganizationRequest request)
+            throws UserAlreadyRegistered, OrganizationAlreadyExist {
 
-        if (repository.findByRegistrationNumber(request.getRegistrationNumber()).isPresent() ||
-                repository.findByName(request.getName()).isPresent()) {
+        if (repository.findByRegistrationNumber(request.getRegistrationNumber()).isPresent()
+                || repository.findByName(request.getName()).isPresent()) {
             throw new OrganizationAlreadyExist("This organization already exists");
         }
 
@@ -64,7 +68,8 @@ public class OrganizationServiceImpl implements OrganizationService {
 
         String nin = request.getNin();
         String email = request.getEmail();
-        if (userRepository.findByNin(nin).isPresent() || userRepository.findByEmail(email).isPresent()) {
+        if (userRepository.findByNin(nin).isPresent()
+                || userRepository.findByEmail(email).isPresent()) {
             throw new UserAlreadyRegistered("This user already exists");
         }
         User user = Map.mapAdminRequest(request);
@@ -77,11 +82,14 @@ public class OrganizationServiceImpl implements OrganizationService {
     }
 
     @Override
-    public OrganizationApprovalResponse processOrganizationRegistration(OrganizationApprovalRequest approvalRequest) throws OrganizationDoesNotExist, OrganizationAlreadyProcessed, UserNotFound {
-        Organization organization = repository.findById(approvalRequest.getOrganizationId())
+    public OrganizationApprovalResponse processOrganizationRegistration(OrganizationApprovalRequest approvalRequest)
+            throws OrganizationDoesNotExist, OrganizationAlreadyProcessed, UserNotFound {
+        Organization organization = repository
+                .findById(approvalRequest.getOrganizationId())
                 .orElseThrow(() -> new OrganizationDoesNotExist("Organization does not exist"));
 
-        User user = userRepository.findById(approvalRequest.getAdminId())
+        User user = userRepository
+                .findById(approvalRequest.getAdminId())
                 .orElseThrow(() -> new UserNotFound("Organization does not exist"));
 
         if (!organization.getOrganizationStatus().equals(OrganizationStatus.PENDING)) {
@@ -93,8 +101,7 @@ public class OrganizationServiceImpl implements OrganizationService {
         if (approvalRequest.getOrganizationStatus().equals(OrganizationStatus.REJECTED))
             organization.setOrganizationStatus(OrganizationStatus.REJECTED);
 
-        if (approvalRequest.getUserStatus().equals(UserStatus.ACTIVE))
-            user.setStatus(UserStatus.ACTIVE);
+        if (approvalRequest.getUserStatus().equals(UserStatus.ACTIVE)) user.setStatus(UserStatus.ACTIVE);
 
         // Provision the Paystack customer + DVA before persisting the approval. If Paystack
         // fails, the FeignException propagates and the organization stays PENDING, so the
@@ -112,15 +119,21 @@ public class OrganizationServiceImpl implements OrganizationService {
 
     private void provisionDedicatedAccount(Organization organization) {
         if (organization.getPaystackCustomerCode() == null) {
-            CreateCustomerRequest createCustomerRequest = new CreateCustomerRequest(organization.getOrganizationEmail(),
-                    organization.getName(), "Organization", organization.getPhoneNumber());
+            CreateCustomerRequest createCustomerRequest = new CreateCustomerRequest(
+                    organization.getOrganizationEmail(),
+                    organization.getName(),
+                    "Organization",
+                    organization.getPhoneNumber());
             PaystackCustomerResponse customerResponse = payStackClient.createCustomer(createCustomerRequest);
             organization.setPaystackCustomerCode(customerResponse.getData().getCustomerCode());
         }
 
         PaystackDvaResponse dvaResponse = payStackClient.createDedicatedAccount(
                 new CreateDvaRequest(organization.getPaystackCustomerCode(), dvaPreferredBank));
-        log.info("Created DVA for organization {} with customer code {}", organization.getId(), organization.getPaystackCustomerCode());
+        log.info(
+                "Created DVA for organization {} with customer code {}",
+                organization.getId(),
+                organization.getPaystackCustomerCode());
 
         organization.setDvaAccountNumber(dvaResponse.getData().getAccountNumber());
         organization.setDvaBankName(dvaResponse.getData().getBank().getName());
@@ -128,12 +141,8 @@ public class OrganizationServiceImpl implements OrganizationService {
 
     @Override
     public List<OrganizationOnlyResponse> viewAll() {
-        return repository.findAll()
-                .stream()
-                .map(map::mapResponse)
-                .collect(Collectors.toList());
+        return repository.findAll().stream().map(map::mapResponse).collect(Collectors.toList());
     }
-
 
     @Override
     public OrganizationOnlyResponse viewById(long id) throws OrganizationDoesNotExist {
@@ -145,10 +154,10 @@ public class OrganizationServiceImpl implements OrganizationService {
     }
 
     @Override
-    public OrganizationOnlyResponse updateOrganization(Long orgId, UpdateOrganizationRequest request) throws OrganizationDoesNotExist {
-        Organization org = repository.findById(orgId)
-                .orElseThrow(() -> new OrganizationDoesNotExist("Organization not found"));
-
+    public OrganizationOnlyResponse updateOrganization(Long orgId, UpdateOrganizationRequest request)
+            throws OrganizationDoesNotExist {
+        Organization org =
+                repository.findById(orgId).orElseThrow(() -> new OrganizationDoesNotExist("Organization not found"));
 
         if (request.getName() != null) org.setName(request.getName());
         if (request.getOrganizationEmail() != null) org.setOrganizationEmail(request.getOrganizationEmail());
@@ -165,5 +174,4 @@ public class OrganizationServiceImpl implements OrganizationService {
 
         return map.mapResponse(repository.save(org));
     }
-
 }

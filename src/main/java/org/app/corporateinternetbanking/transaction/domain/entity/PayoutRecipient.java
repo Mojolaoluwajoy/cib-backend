@@ -1,16 +1,14 @@
 package org.app.corporateinternetbanking.transaction.domain.entity;
 
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Setter
 @Getter
 public class PayoutRecipient {
-
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,11 +25,9 @@ public class PayoutRecipient {
 
     @Column(nullable = false, unique = true)
     private String recipientCode;
+
     @Column(nullable = false, length = 100)
     private String recipientName;
 
     private LocalDateTime createdAt = LocalDateTime.now();
-
 }
-
-

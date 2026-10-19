@@ -5,6 +5,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.app.corporateinternetbanking.user.domain.entity.User;
@@ -19,8 +20,6 @@ import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import java.io.IOException;
-
 @AllArgsConstructor
 @Slf4j
 @Component
@@ -31,10 +30,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final UserRepository userRepository;
 
     @Override
-    protected void doFilterInternal(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
 
         String authorization = request.getHeader("Authorization");
 
@@ -68,7 +65,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             // Check if user still exists in database
             User user;
             try {
-                user = userRepository.findByEmail(email)
+                user = userRepository
+                        .findByEmail(email)
                         .orElseThrow(() -> new UsernameNotFoundException("User not found"));
             } catch (UsernameNotFoundException e) {
                 log.warn("User no longer exists in database: {}", email);
@@ -84,26 +82,21 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             }
 
             // Check if user's organization has been disabled
-            if (user.getOrganization() != null &&
-                    user.getOrganization().getOrganizationStatus() != null) {
-                String orgStatus = user.getOrganization()
-                        .getOrganizationStatus().name();
+            if (user.getOrganization() != null && user.getOrganization().getOrganizationStatus() != null) {
+                String orgStatus =
+                        user.getOrganization().getOrganizationStatus().name();
                 if (orgStatus.equals("DISABLED")) {
                     log.warn("User from disabled org attempted access: {}", email);
-                    sendUnauthorized(response,
-                            "Your organization has been disabled");
+                    sendUnauthorized(response, "Your organization has been disabled");
                     return;
                 }
             }
 
             // All checks passed — authenticate the request
             try {
-                UserDetails userDetails =
-                        userDetailsService.loadUserByUsername(email);
+                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
                 UsernamePasswordAuthenticationToken authToken =
-                        new UsernamePasswordAuthenticationToken(
-                                userDetails, null, userDetails.getAuthorities()
-                        );
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 authToken.setDetails(new WebAuthenticationDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             } catch (Exception e) {
@@ -116,12 +109,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    private void sendUnauthorized(HttpServletResponse response,
-                                  String message) throws IOException {
+    private void sendUnauthorized(HttpServletResponse response, String message) throws IOException {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json");
-        response.getWriter().write(
-                "{\"success\":false,\"message\":\"" + message + "\"}"
-        );
+        response.getWriter().write("{\"success\":false,\"message\":\"" + message + "\"}");
     }
 }

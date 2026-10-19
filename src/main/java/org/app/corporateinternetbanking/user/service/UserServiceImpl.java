@@ -1,5 +1,9 @@
 package org.app.corporateinternetbanking.user.service;
 
+import static org.app.corporateinternetbanking.user.utils.mapper.UserMap.mapResponse;
+
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.app.corporateinternetbanking.email.EmailSenderService;
@@ -22,19 +26,16 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-
-import static org.app.corporateinternetbanking.user.utils.mapper.UserMap.mapResponse;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
     private final UserRepository repository;
     private final PasswordEncoder passwordEncoder;
+
     @Autowired
     EmailSenderService senderService;
+
     @Autowired
     private JwtService jwtService;
 
@@ -42,10 +43,10 @@ public class UserServiceImpl implements UserService {
     private String frontendBaseUrl;
 
     @Override
-    public String sendInvitationTokenToUser(InvitationRequest invitationRequest) throws UserNotFound, UserAlreadyRegistered {
+    public String sendInvitationTokenToUser(InvitationRequest invitationRequest)
+            throws UserNotFound, UserAlreadyRegistered {
         User admin = getCurrentUser();
-        org.app.corporateinternetbanking.organization.domain.entity.Organization organization
-                = admin.getOrganization();
+        org.app.corporateinternetbanking.organization.domain.entity.Organization organization = admin.getOrganization();
 
         if (repository.existsByEmail(invitationRequest.getUserEmail())) {
             throw new UserAlreadyRegistered("User already exists");
@@ -62,13 +63,16 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserResponse createUserWithToken(UserRegistrationRequest request) throws UserAlreadyRegistered, OrganizationDoesNotExist, TokenExpiredOrInvalid, SuperAdminAlreadyExists, UserNotFound {
+    public UserResponse createUserWithToken(UserRegistrationRequest request)
+            throws UserAlreadyRegistered, OrganizationDoesNotExist, TokenExpiredOrInvalid, SuperAdminAlreadyExists,
+                    UserNotFound {
 
         // The token must be an invitation issued for this exact email, not any valid token.
         if (!jwtService.isInvitationTokenValid(request.getToken(), request.getEmail())) {
             throw new TokenExpiredOrInvalid("Token expired or its invalid");
         }
-        User user = repository.findByEmail(request.getEmail())
+        User user = repository
+                .findByEmail(request.getEmail())
                 .orElseThrow(() -> new UserNotFound("This user has not been invited"));
 
         if (user.getStatus() == UserStatus.ACTIVE) {
@@ -89,10 +93,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<UserResponse> ViewAll() {
-        String email = SecurityContextHolder.getContext()
-                .getAuthentication().getName();
-        User currentUser = repository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = repository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
 
         List<User> users;
         if (currentUser.getRole() == UserRole.SUPER_ADMIN) {
@@ -103,9 +105,7 @@ public class UserServiceImpl implements UserService {
             users = repository.findAllByOrganization(currentUser.getOrganization());
         }
 
-        return users.stream()
-                .map(UserMap::mapResponse)
-                .collect(java.util.stream.Collectors.toList());
+        return users.stream().map(UserMap::mapResponse).collect(java.util.stream.Collectors.toList());
     }
 
     @Override
@@ -118,7 +118,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public PasswordResetResponse resetPassword(PasswordResetRequest passwordResetRequest) throws IncorrectPassword, InvalidEmail {
+    public PasswordResetResponse resetPassword(PasswordResetRequest passwordResetRequest)
+            throws IncorrectPassword, InvalidEmail {
         // Always change the logged-in user's password; the email in the body is not trusted.
         User user;
         try {
@@ -137,8 +138,10 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public String resetForgottenPassword(ForgotPasswordRequest forgotPasswordRequest) throws InvalidEmail, TokenExpiredOrInvalid {
-        User user = repository.findByEmail(forgotPasswordRequest.getEmail())
+    public String resetForgottenPassword(ForgotPasswordRequest forgotPasswordRequest)
+            throws InvalidEmail, TokenExpiredOrInvalid {
+        User user = repository
+                .findByEmail(forgotPasswordRequest.getEmail())
                 .orElseThrow(() -> new InvalidEmail("Email not found"));
         // Token must be a reset token for this user, issued before their current password was set.
         if (!jwtService.isPasswordResetTokenValid(forgotPasswordRequest.getToken(), user)) {
@@ -149,16 +152,13 @@ public class UserServiceImpl implements UserService {
         return "Password reset successful";
     }
 
-
     @Override
     public PasswordResetResponse sendForgotPasswordToken(String email) throws InvalidEmail {
-        User user = repository.findByEmail(email)
-                .orElseThrow(() -> new InvalidEmail("Email not found"));
+        User user = repository.findByEmail(email).orElseThrow(() -> new InvalidEmail("Email not found"));
         String token = jwtService.generatePasswordResetToken(user);
         senderService.sendEmail(user.getEmail(), "Password reset token", "Your password reset token is: \n" + token);
         return PasswordResetResponseMap.resetResponseMap(user);
     }
-
 
     public void sendMail(InvitationRequest invitationRequest, String token) {
         String encodedToken;
@@ -168,32 +168,22 @@ public class UserServiceImpl implements UserService {
             encodedToken = token;
         }
 
-        String registrationLink = frontendBaseUrl
-                + "/complete-registration?token="
-                + encodedToken;
+        String registrationLink = frontendBaseUrl + "/complete-registration?token=" + encodedToken;
 
-        String emailBody =
-                "Hello,\n\n"
-                        + "You have been invited to join CIB Platform.\n\n"
-                        + "Click the link below to complete your registration:\n\n"
-                        + registrationLink + "\n\n"
-                        + "Simply click the link and fill in your personal details to activate your account.\n\n"
-                        + "If you did not expect this invitation, please ignore this email.\n\n"
-                        + "— CIB Platform Team";
+        String emailBody = "Hello,\n\n"
+                + "You have been invited to join CIB Platform.\n\n"
+                + "Click the link below to complete your registration:\n\n"
+                + registrationLink + "\n\n"
+                + "Simply click the link and fill in your personal details to activate your account.\n\n"
+                + "If you did not expect this invitation, please ignore this email.\n\n"
+                + "— CIB Platform Team";
 
-        senderService.sendEmail(
-                invitationRequest.getUserEmail(),
-                "You have been invited to CIB Platform",
-                emailBody
-        );
+        senderService.sendEmail(invitationRequest.getUserEmail(), "You have been invited to CIB Platform", emailBody);
     }
 
     public User getCurrentUser() throws UserNotFound {
-        String email = SecurityContextHolder.getContext()
-                .getAuthentication()
-                .getName();
-        return repository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFound("User not found"));
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return repository.findByEmail(email).orElseThrow(() -> new UserNotFound("User not found"));
     }
 
     @Override
@@ -214,18 +204,16 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserResponse updateUserProfile(Long userId, UpdateProfileRequest request) throws UserNotFound, UnauthorizedAccess, UserAlreadyRegistered {
+    public UserResponse updateUserProfile(Long userId, UpdateProfileRequest request)
+            throws UserNotFound, UnauthorizedAccess, UserAlreadyRegistered {
 
         User admin = getCurrentUser();
 
-        User targetUser = repository.findById(userId)
-                .orElseThrow(() -> new UserNotFound("User not found"));
+        User targetUser = repository.findById(userId).orElseThrow(() -> new UserNotFound("User not found"));
 
-        if (!targetUser.getOrganization().getId()
-                .equals(admin.getOrganization().getId())) {
+        if (!targetUser.getOrganization().getId().equals(admin.getOrganization().getId())) {
             throw new UnauthorizedAccess("This user is not in your organization");
         }
-
 
         if (request.getFirstName() != null) targetUser.setFirstName(request.getFirstName());
         if (request.getLastName() != null) targetUser.setLastName(request.getLastName());

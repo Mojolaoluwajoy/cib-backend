@@ -9,5 +9,4 @@ import org.app.corporateinternetbanking.transaction.enums.TransactionStatus;
 public class TransactionApprovalRequest {
     private long transactionId;
     private TransactionStatus status;
-
 }

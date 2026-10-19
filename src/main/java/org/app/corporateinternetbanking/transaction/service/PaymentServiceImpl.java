@@ -1,5 +1,7 @@
 package org.app.corporateinternetbanking.transaction.service;
 
+import java.util.HashMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.app.corporateinternetbanking.account.exception.AccountDoesNotExist;
 import org.app.corporateinternetbanking.account.exception.InvalidAccount;
@@ -16,21 +18,18 @@ import org.app.corporateinternetbanking.user.exceptions.UnauthorizedAccess;
 import org.app.corporateinternetbanking.user.exceptions.UserNotFound;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.Map;
-
-
 @Service
 @RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
-
 
     private final TransactionService transactionService;
     private final PayStackClient payStackClient;
     private final FundingMap fundingMap;
 
     @Override
-    public Map<String, Object> initializeFunding(FundRequest fundRequest) throws IsNull, AccountDoesNotExist, UserNotFound, InvalidAccount, InvalidAmount, InsufficientBalance, UnauthorizedAccess, DuplicateTransaction {
+    public Map<String, Object> initializeFunding(FundRequest fundRequest)
+            throws IsNull, AccountDoesNotExist, UserNotFound, InvalidAccount, InvalidAmount, InsufficientBalance,
+                    UnauthorizedAccess, DuplicateTransaction {
 
         TransferRequest transferRequest = fundingMap.mapToFundingRequest(fundRequest);
 
@@ -43,7 +42,5 @@ public class PaymentServiceImpl implements PaymentService {
 
         body.put("reference", response.getTransactionReference());
         return payStackClient.initializeTransaction(body);
-
-
     }
 }

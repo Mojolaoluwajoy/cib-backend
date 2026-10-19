@@ -1,5 +1,7 @@
 package org.app.corporateinternetbanking.organization.utils.mapper;
 
+import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.app.corporateinternetbanking.organization.domain.entity.Organization;
 import org.app.corporateinternetbanking.organization.dto.OrganizationId;
@@ -10,9 +12,6 @@ import org.app.corporateinternetbanking.user.domain.entity.User;
 import org.app.corporateinternetbanking.user.domain.repository.UserRepository;
 import org.app.corporateinternetbanking.user.enums.UserRole;
 import org.springframework.stereotype.Component;
-
-import java.util.Optional;
-import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -48,7 +47,6 @@ public class Map {
         response.setStatus(user.getStatus());
         response.setOrganizationId(new OrganizationId(user.getOrganization().getId()));
         return response;
-
     }
 
     public static User mapAdminRequest(OrganizationRequest registrationRequest) {
@@ -70,11 +68,11 @@ public class Map {
         Optional<User> adminOpt = userRepository.findByOrganizationIdAndRole(organization.getId(), UserRole.ADMIN);
 
         System.out.println("Admin found: " + adminOpt.isPresent());
-        adminOpt.ifPresent(u -> System.out.println("Admin ID: " + u.getId() + ", Role: " + u.getRole() + ", OrgId: " + u.getOrganization().getId()));
+        adminOpt.ifPresent(u -> System.out.println("Admin ID: " + u.getId() + ", Role: " + u.getRole() + ", OrgId: "
+                + u.getOrganization().getId()));
 
         User admin = adminOpt.orElse(null);
         response.setAdminId(admin != null ? admin.getId() : null);
-
 
         // User admin = userRepository
         //       .findByOrganizationIdAndRole(organization.getId(), UserRole.ADMIN)
@@ -87,6 +85,5 @@ public class Map {
         response.setDvaAccountNumber(organization.getDvaAccountNumber());
         response.setDvaBankName(organization.getDvaBankName());
         return response;
-
     }
 }

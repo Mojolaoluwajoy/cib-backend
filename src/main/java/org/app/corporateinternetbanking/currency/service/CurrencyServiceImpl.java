@@ -1,5 +1,7 @@
 package org.app.corporateinternetbanking.currency.service;
 
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.app.corporateinternetbanking.currency.domain.entity.Currency;
 import org.app.corporateinternetbanking.currency.domain.repository.CurrencyRepository;
@@ -10,18 +12,15 @@ import org.app.corporateinternetbanking.currency.exceptions.CurrencyNotFound;
 import org.app.corporateinternetbanking.currency.utils.CurrencyMap;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 @Service
 @AllArgsConstructor
 public class CurrencyServiceImpl implements CurrencyService {
     private final CurrencyRepository repository;
 
-
     @Override
     public CurrencyResponse changeCurrencyStatus(CurrencyRequest currencyRequest) throws CurrencyNotFound {
-        Currency currency = repository.findByCode(currencyRequest.getCode())
+        Currency currency = repository
+                .findByCode(currencyRequest.getCode())
                 .orElseThrow(() -> new CurrencyNotFound("This currency does not exist"));
         if (currencyRequest.getStatus().equals(CurrencyStatus.ACTIVE)) {
             currency.setStatus(CurrencyStatus.ACTIVE);
@@ -34,17 +33,14 @@ public class CurrencyServiceImpl implements CurrencyService {
         return CurrencyMap.mapCurrencyResponse(currency);
     }
 
-
     public List<CurrencyResponse> viewAll() {
-        return repository.findAll()
-                .stream()
+        return repository.findAll().stream()
                 .map(CurrencyMap::mapCurrencyResponse) // use your existing currency mapper
                 .collect(Collectors.toList());
     }
 
     public List<CurrencyResponse> viewByStatus(CurrencyStatus status) {
-        return repository.findAllByStatus(status)
-                .stream()
+        return repository.findAllByStatus(status).stream()
                 .map(CurrencyMap::mapCurrencyResponse)
                 .collect(Collectors.toList());
     }

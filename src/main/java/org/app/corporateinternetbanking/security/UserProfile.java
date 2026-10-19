@@ -1,16 +1,15 @@
 package org.app.corporateinternetbanking.security;
 
-import lombok.Getter;
-import org.app.corporateinternetbanking.user.enums.UserRole;
-import org.app.corporateinternetbanking.user.enums.UserStatus;
-import org.app.corporateinternetbanking.user.domain.entity.User;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
+import lombok.Getter;
+import org.app.corporateinternetbanking.user.domain.entity.User;
+import org.app.corporateinternetbanking.user.enums.UserRole;
+import org.app.corporateinternetbanking.user.enums.UserStatus;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 @Getter
 public class UserProfile implements UserDetails {

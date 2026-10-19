@@ -1,8 +1,7 @@
 package org.app.corporateinternetbanking.user.dto;
 
-import lombok.*;
-
 import java.math.BigDecimal;
+import lombok.*;
 
 @Getter
 @Setter

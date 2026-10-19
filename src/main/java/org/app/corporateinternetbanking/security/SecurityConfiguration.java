@@ -31,81 +31,77 @@ public class SecurityConfiguration {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
-        String[] publicEndPoints = new String[]{
-                "/auth/login",
-                "/auth/password/token",
-                "/auth/forgotten/password",
-                "/users/create",
-                "/organizations/create",
-                "/swagger-ui/**",
-                "/swagger-ui.html",
-                "/v3/api-docs/**",
-                "/v3/api-docs",
-                "/webjars/**",
-                "/swagger-resources/**",
-                "/webhook/paystack",
+        String[] publicEndPoints = new String[] {
+            "/auth/login",
+            "/auth/password/token",
+            "/auth/forgotten/password",
+            "/users/create",
+            "/organizations/create",
+            "/swagger-ui/**",
+            "/swagger-ui.html",
+            "/v3/api-docs/**",
+            "/v3/api-docs",
+            "/webjars/**",
+            "/swagger-resources/**",
+            "/webhook/paystack",
         };
 
         httpSecurity
                 .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
-                .authorizeHttpRequests(auth -> auth
-
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
-                        .requestMatchers(publicEndPoints).permitAll()
-
-                        .requestMatchers("/auth/password/reset").authenticated()
-
-                        .requestMatchers("/users/invitation").hasAnyRole(
-                                UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
-                        .requestMatchers("/users/viewAll").hasAnyRole(
-                                UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
-                        .requestMatchers("/users/users").hasAnyRole(
-                                UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
-                        .requestMatchers("/users/profile").authenticated()
-
-                        .requestMatchers("/organizations/findBy").hasAnyRole(
-                                UserRole.SUPER_ADMIN.name(), UserRole.ADMIN.name())
-                        .requestMatchers("/organizations/viewAll").hasAnyRole(
-                                UserRole.SUPER_ADMIN.name(), UserRole.ADMIN.name())
-                        .requestMatchers("/organizations/approve").hasRole(
-                                UserRole.SUPER_ADMIN.name())
-
-                        .requestMatchers("/accounts/create").hasAnyRole(
-                                UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
-                        .requestMatchers("/accounts/all").hasAnyRole(
+                .authorizeHttpRequests(auth -> auth.requestMatchers(HttpMethod.OPTIONS, "/**")
+                        .permitAll()
+                        .requestMatchers(publicEndPoints)
+                        .permitAll()
+                        .requestMatchers("/auth/password/reset")
+                        .authenticated()
+                        .requestMatchers("/users/invitation")
+                        .hasAnyRole(UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
+                        .requestMatchers("/users/viewAll")
+                        .hasAnyRole(UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
+                        .requestMatchers("/users/users")
+                        .hasAnyRole(UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
+                        .requestMatchers("/users/profile")
+                        .authenticated()
+                        .requestMatchers("/organizations/findBy")
+                        .hasAnyRole(UserRole.SUPER_ADMIN.name(), UserRole.ADMIN.name())
+                        .requestMatchers("/organizations/viewAll")
+                        .hasAnyRole(UserRole.SUPER_ADMIN.name(), UserRole.ADMIN.name())
+                        .requestMatchers("/organizations/approve")
+                        .hasRole(UserRole.SUPER_ADMIN.name())
+                        .requestMatchers("/accounts/create")
+                        .hasAnyRole(UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
+                        .requestMatchers("/accounts/all")
+                        .hasAnyRole(
                                 UserRole.ADMIN.name(),
                                 UserRole.SUPER_ADMIN.name(),
                                 UserRole.MAKER.name(),
                                 UserRole.APPROVER.name())
-                        .requestMatchers("/accounts/find").hasAnyRole(
+                        .requestMatchers("/accounts/find")
+                        .hasAnyRole(
                                 UserRole.ADMIN.name(),
                                 UserRole.SUPER_ADMIN.name(),
                                 UserRole.MAKER.name(),
                                 UserRole.APPROVER.name())
-
-                        .requestMatchers("/transactions/initiate").hasAnyRole(
-                                UserRole.MAKER.name(), UserRole.SUPER_ADMIN.name())
-                        .requestMatchers("/transactions/approve").hasAnyRole(
-                                UserRole.APPROVER.name(), UserRole.SUPER_ADMIN.name())
-                        .requestMatchers("/transactions/pending").hasAnyRole(
-                                UserRole.APPROVER.name(), UserRole.ADMIN.name(),
-                                UserRole.SUPER_ADMIN.name())
-                        .requestMatchers("/transactions/transactions").authenticated()
-                        .requestMatchers("/external/transaction/**").hasAnyRole(
-                                UserRole.MAKER.name(), UserRole.SUPER_ADMIN.name())
-
-                        .requestMatchers("/currencies/status").hasRole(
-                                UserRole.SUPER_ADMIN.name())
-                        .requestMatchers("/currencies/all").hasAnyRole(
-                                UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
-
-                        .requestMatchers("/dashboard/stats").authenticated()
-                        .anyRequest().authenticated()
-                )
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                        .requestMatchers("/transactions/initiate")
+                        .hasAnyRole(UserRole.MAKER.name(), UserRole.SUPER_ADMIN.name())
+                        .requestMatchers("/transactions/approve")
+                        .hasAnyRole(UserRole.APPROVER.name(), UserRole.SUPER_ADMIN.name())
+                        .requestMatchers("/transactions/pending")
+                        .hasAnyRole(UserRole.APPROVER.name(), UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
+                        .requestMatchers("/transactions/transactions")
+                        .authenticated()
+                        .requestMatchers("/external/transaction/**")
+                        .hasAnyRole(UserRole.MAKER.name(), UserRole.SUPER_ADMIN.name())
+                        .requestMatchers("/currencies/status")
+                        .hasRole(UserRole.SUPER_ADMIN.name())
+                        .requestMatchers("/currencies/all")
+                        .hasAnyRole(UserRole.ADMIN.name(), UserRole.SUPER_ADMIN.name())
+                        .requestMatchers("/dashboard/stats")
+                        .authenticated()
+                        .anyRequest()
+                        .authenticated())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -129,6 +125,4 @@ public class SecurityConfiguration {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-
-
 }

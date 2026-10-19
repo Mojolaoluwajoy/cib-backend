@@ -1,5 +1,7 @@
 package org.app.corporateinternetbanking.account.service;
 
+import java.math.BigDecimal;
+import java.util.List;
 import org.app.corporateinternetbanking.account.domain.entity.Account;
 import org.app.corporateinternetbanking.account.dto.AccountRequest;
 import org.app.corporateinternetbanking.account.dto.AccountResponse;
@@ -11,16 +13,13 @@ import org.app.corporateinternetbanking.transaction.exceptions.InsufficientBalan
 import org.app.corporateinternetbanking.transaction.exceptions.IsNull;
 import org.app.corporateinternetbanking.user.exceptions.UserNotFound;
 
-import java.math.BigDecimal;
-import java.util.List;
-
 public interface AccountService {
-    AccountResponse createAccount(AccountRequest request) throws OrganizationDoesNotExist, UserNotFound, CurrencyNotFound, CurrencyNotActive;
+    AccountResponse createAccount(AccountRequest request)
+            throws OrganizationDoesNotExist, UserNotFound, CurrencyNotFound, CurrencyNotActive;
 
     List<AccountResponse> viewAll();
 
     AccountResponse findById(Long id) throws AccountDoesNotExist;
-
 
     void credit(Long accountId, BigDecimal amount) throws AccountDoesNotExist;
 

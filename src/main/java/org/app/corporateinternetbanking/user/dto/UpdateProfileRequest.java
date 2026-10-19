@@ -10,4 +10,3 @@ public class UpdateProfileRequest {
     private String lastName;
     private String email;
 }
-

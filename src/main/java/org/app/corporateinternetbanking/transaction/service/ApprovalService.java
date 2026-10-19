@@ -1,6 +1,12 @@
 package org.app.corporateinternetbanking.transaction.service;
 
+import static org.app.corporateinternetbanking.transaction.utils.mapper.ApprovalMap.mapApprovalResponse;
+
 import feign.FeignException;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.app.corporateinternetbanking.account.domain.entity.Account;
@@ -24,13 +30,6 @@ import org.app.corporateinternetbanking.user.exceptions.UserNotFound;
 import org.app.corporateinternetbanking.user.service.UserServiceImpl;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.app.corporateinternetbanking.transaction.utils.mapper.ApprovalMap.mapApprovalResponse;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -42,10 +41,12 @@ public class ApprovalService {
     private final PayStackClient payStackClient;
     private final UserServiceImpl userService;
 
-    public TransactionApprovalResponse approveInternalTransaction(TransactionApprovalRequest request) throws TransactionAlreadyProcessed, TransactionDoesNotExist, InvalidStatus, UnsupportedTransactionType, UserNotFound,
-            UnauthorizedAccess, InvalidAmount, AccountDoesNotExist, CurrencyNotFound, InsufficientBalance,
-            IsNull {
-        Transaction transaction = transactionRepository.findById(request.getTransactionId())
+    public TransactionApprovalResponse approveInternalTransaction(TransactionApprovalRequest request)
+            throws TransactionAlreadyProcessed, TransactionDoesNotExist, InvalidStatus, UnsupportedTransactionType,
+                    UserNotFound, UnauthorizedAccess, InvalidAmount, AccountDoesNotExist, CurrencyNotFound,
+                    InsufficientBalance, IsNull {
+        Transaction transaction = transactionRepository
+                .findById(request.getTransactionId())
                 .orElseThrow(() -> new TransactionDoesNotExist("This transaction does not exist"));
         User approver = userService.getCurrentUser();
         if (!approver.getRole().equals(UserRole.APPROVER)) {
@@ -66,7 +67,8 @@ public class ApprovalService {
             // Funds were only moved from available to reserved at initiation; totalBalance never changed.
             Account sourceAccount = transaction.getSourceAccount();
             BigDecimal amount = transaction.getAmount();
-            sourceAccount.setAvailableBalance(sourceAccount.getAvailableBalance().add(amount));
+            sourceAccount.setAvailableBalance(
+                    sourceAccount.getAvailableBalance().add(amount));
             sourceAccount.setReservedBalance(sourceAccount.getReservedBalance().subtract(amount));
             transactionRepository.save(transaction);
             return mapApprovalResponse(transaction);
@@ -80,7 +82,8 @@ public class ApprovalService {
         return mapApprovalResponse(transaction);
     }
 
-    private void processExternalPayout(Transaction transaction) throws AccountDoesNotExist, InsufficientBalance, IsNull {
+    private void processExternalPayout(Transaction transaction)
+            throws AccountDoesNotExist, InsufficientBalance, IsNull {
 
         if (transaction.getPayoutRecipient() == null) {
             throw new IsNull("Recipient missing");
@@ -110,7 +113,6 @@ public class ApprovalService {
         }
     }
 
-
     private void processInternalTransfer(Transaction transaction) throws CurrencyNotFound {
         Account source = transaction.getSourceAccount();
         Account destination = transaction.getDestinationAccount();
@@ -121,7 +123,8 @@ public class ApprovalService {
             source.setReservedBalance(source.getReservedBalance().subtract(transaction.getAmount()));
 
             BigDecimal newDestinationBalance = destination.getTotalBalance().add(amount);
-            BigDecimal newDestinationAvailableBalance = destination.getAvailableBalance().add(amount);
+            BigDecimal newDestinationAvailableBalance =
+                    destination.getAvailableBalance().add(amount);
             destination.setTotalBalance(newDestinationBalance);
             destination.setAvailableBalance(newDestinationAvailableBalance);
         } else {
@@ -133,20 +136,27 @@ public class ApprovalService {
 
             BigDecimal newSourceBalance = source.getTotalBalance().subtract(amount);
             source.setTotalBalance(newSourceBalance);
-            ledgerService.createEntry(source, transaction, EntryType.DEBIT, source.getCurrency().getCode(), amount, newSourceBalance);
+            ledgerService.createEntry(
+                    source, transaction, EntryType.DEBIT, source.getCurrency().getCode(), amount, newSourceBalance);
 
             BigDecimal newDestinationBalance = destination.getTotalBalance().add(convertedAmount);
             destination.setTotalBalance(newDestinationBalance);
 
-            BigDecimal newDestinationAvailableBalance = destination.getAvailableBalance().add(convertedAmount);
+            BigDecimal newDestinationAvailableBalance =
+                    destination.getAvailableBalance().add(convertedAmount);
             destination.setAvailableBalance(newDestinationAvailableBalance);
 
-            ledgerService.createEntry(destination, transaction, EntryType.CREDIT, destination.getCurrency().getCode(), convertedAmount, newDestinationBalance);
+            ledgerService.createEntry(
+                    destination,
+                    transaction,
+                    EntryType.CREDIT,
+                    destination.getCurrency().getCode(),
+                    convertedAmount,
+                    newDestinationBalance);
             source.setReservedBalance(source.getReservedBalance().subtract(transaction.getAmount()));
             transaction.setConvertedAmount(convertedAmount);
             transaction.setExchangeRate(rate);
             transaction.setAmount(amount);
-
         }
 
         transaction.setType(TransactionType.INTERNAL_TRANSFER);

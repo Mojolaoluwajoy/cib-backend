@@ -1,5 +1,6 @@
 package org.app.corporateinternetbanking.notification.service;
 
+import java.time.LocalDateTime;
 import lombok.extern.slf4j.Slf4j;
 import org.app.corporateinternetbanking.email.EmailSenderService;
 import org.app.corporateinternetbanking.notification.domain.entity.Notification;
@@ -8,14 +9,13 @@ import org.app.corporateinternetbanking.notification.enums.NotificationStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-
 @Slf4j
 @Service
 public class NotificationServiceImpl implements NotificationService {
 
     @Autowired
     NotificationRepository notificationRepository;
+
     @Autowired
     EmailSenderService emailSenderService;
 
@@ -33,14 +33,12 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     public void sendPendingTransactionsNotification(Notification notification) {
         try {
-            emailSenderService.sendEmail(notification.getRecipient(), "pending transactions alert", notification.getMessage());
+            emailSenderService.sendEmail(
+                    notification.getRecipient(), "pending transactions alert", notification.getMessage());
             notification.setStatus(NotificationStatus.SENT);
             notification.setSentAt(LocalDateTime.now());
         } catch (Exception e) {
             log.error("Email failed", e);
-
         }
     }
-
-
 }

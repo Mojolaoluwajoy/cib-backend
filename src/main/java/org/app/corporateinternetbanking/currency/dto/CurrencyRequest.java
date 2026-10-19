@@ -1,8 +1,8 @@
 package org.app.corporateinternetbanking.currency.dto;
 
-import org.app.corporateinternetbanking.currency.enums.CurrencyStatus;
 import lombok.Getter;
 import lombok.Setter;
+import org.app.corporateinternetbanking.currency.enums.CurrencyStatus;
 
 @Setter
 @Getter

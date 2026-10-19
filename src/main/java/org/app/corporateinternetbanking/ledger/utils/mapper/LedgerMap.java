@@ -1,11 +1,10 @@
 package org.app.corporateinternetbanking.ledger.utils.mapper;
 
+import org.app.corporateinternetbanking.ledger.domain.entity.LedgerEntry;
 import org.app.corporateinternetbanking.ledger.dto.LedgerCreationRequest;
 import org.app.corporateinternetbanking.ledger.dto.LedgerCreationResponse;
-import org.app.corporateinternetbanking.ledger.domain.entity.LedgerEntry;
 
 public class LedgerMap {
-
 
     public static LedgerEntry mapCreationRequest(LedgerCreationRequest request) {
         LedgerEntry ledgerEntry = new LedgerEntry();

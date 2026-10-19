@@ -15,7 +15,6 @@ public class ApprovalMap {
     private Organization organization;
     private User user;
 
-
     public static ApprovalMap mapApprovalRequest(OrganizationApprovalRequest request) {
         Organization organization = new Organization();
         User user = new User();
