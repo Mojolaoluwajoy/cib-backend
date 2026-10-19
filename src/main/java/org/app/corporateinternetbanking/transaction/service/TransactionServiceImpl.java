@@ -14,6 +14,7 @@ import org.app.corporateinternetbanking.account.domain.entity.Account;
 import org.app.corporateinternetbanking.account.domain.repository.AccountRepository;
 import org.app.corporateinternetbanking.account.exception.AccountDoesNotExist;
 import org.app.corporateinternetbanking.account.exception.InvalidAccount;
+import org.app.corporateinternetbanking.notification.service.NotificationService;
 import org.app.corporateinternetbanking.organization.domain.entity.Organization;
 import org.app.corporateinternetbanking.organization.domain.repository.OrganizationRepository;
 import org.app.corporateinternetbanking.organization.exceptions.OrganizationDoesNotExist;
@@ -33,6 +34,7 @@ import org.app.corporateinternetbanking.user.exceptions.UnauthorizedAccess;
 import org.app.corporateinternetbanking.user.exceptions.UserNotFound;
 import org.app.corporateinternetbanking.user.service.UserServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -45,6 +47,11 @@ public class TransactionServiceImpl implements TransactionService {
     private final PayoutRecipientRepository payoutRecipientRepository;
     private final UserServiceImpl userService;
     private final OrganizationRepository organizationRepository;
+    private final NotificationService notificationService;
+
+    // Transfers/payouts nobody approves within this window expire and release their reserved funds.
+    @Value("${transaction.approval.expiry-hours}")
+    private long approvalExpiryHours;
 
     @Autowired
     AccountRepository accountRepository;
@@ -218,6 +225,36 @@ public class TransactionServiceImpl implements TransactionService {
             transaction.setStatus(TransactionStatus.EXPIRED);
             transaction.setProcessedAt(LocalDateTime.now());
             log.info("Automatically expired due to time-out");
+        }
+    }
+
+    @Transactional
+    @Override
+    public void expireUnapprovedTransactions() {
+        LocalDateTime cutoff = LocalDateTime.now().minusHours(approvalExpiryHours);
+        List<Transaction> unapproved =
+                transactionRepository.findByStatusAndCreatedAtBefore(TransactionStatus.PENDING_APPROVAL, cutoff);
+
+        for (Transaction transaction : unapproved) {
+            // Funds were moved from available to reserved at initiation; give them back.
+            Account source = transaction.getSourceAccount();
+            BigDecimal amount = transaction.getAmount();
+            source.setAvailableBalance(source.getAvailableBalance().add(amount));
+            source.setReservedBalance(source.getReservedBalance().subtract(amount));
+            transaction.setStatus(TransactionStatus.EXPIRED);
+            transaction.setProcessedAt(LocalDateTime.now());
+            log.info(
+                    "Expired unapproved transaction {} after {} hours",
+                    transaction.getReference(),
+                    approvalExpiryHours);
+
+            if (transaction.getCreatedBy() != null) {
+                notificationService.createNotification(
+                        transaction.getCreatedBy().getEmail(),
+                        "Your " + transaction.getType() + " of " + amount + " (reference "
+                                + transaction.getReference() + ") was not approved within " + approvalExpiryHours
+                                + " hours and has expired. The reserved funds have been released.");
+            }
         }
     }
 
