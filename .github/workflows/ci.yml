@@ -15,26 +15,9 @@ jobs:
     name: Format check, build and test
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: root
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: corporate_internet_banking
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U root"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-
+    # Integration tests start their own throwaway Postgres with Testcontainers (Docker is built into the runner).
     env:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/corporate_internet_banking
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: postgres
-      # Dummy values: the context test only needs the properties to resolve, it never calls Paystack.
+      # Dummy values: tests only need these properties to resolve; Paystack and email are mocked.
       PAYSTACK_SECRET_KEY: sk_test_ci
       PAYSTACK_PUBLIC_KEY: pk_test_ci
       JWT_SECRET: Y2ktb25seS1kdW1teS1qd3Qtc2VjcmV0LW5vdC1yZWFsLTEyMzQ1Ng==
