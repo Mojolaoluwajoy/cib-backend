@@ -1,5 +1,6 @@
 package org.app.corporateinternetbanking.security;
 
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -43,12 +44,22 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         String token = authorization.substring(7);
-        String email = jwtService.extractUsername(token);
+        String email;
+        boolean tokenValid;
+        try {
+            email = jwtService.extractUsername(token);
+            tokenValid = jwtService.isTokenValid(token);
+        } catch (JwtException | IllegalArgumentException e) {
+            // Expired, tampered or malformed token: answer 401 instead of letting it bubble up as a 500.
+            log.warn("Rejected JWT: {}", e.getMessage());
+            sendUnauthorized(response, "Token is invalid or expired");
+            return;
+        }
 
         if (email != null && !email.isBlank()) {
 
             // Check token validity first
-            if (!jwtService.isTokenValid(token)) {
+            if (!tokenValid) {
                 log.warn("Invalid or expired JWT token for: {}", email);
                 sendUnauthorized(response, "Token is invalid or expired");
                 return;

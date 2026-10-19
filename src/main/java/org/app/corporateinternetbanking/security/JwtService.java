@@ -1,6 +1,7 @@
 package org.app.corporateinternetbanking.security;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.app.corporateinternetbanking.user.domain.entity.User;
@@ -8,6 +9,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
@@ -55,8 +59,10 @@ public class JwtService {
         return Keys.hmacShaKeyFor(encodedKey);
     }
 
+    // Purpose tokens (invitation / password reset) carry a "type" claim and must never work as login tokens.
     public boolean isTokenValid(String token) {
-        return !isTokenExpired(token);
+        Claims claims = extractAllClaims(token);
+        return claims.get("type") == null && !isTokenExpired(claims);
     }
 
     public String generateToken(User user) {
@@ -74,9 +80,35 @@ public class JwtService {
 
     }
 
-    public String generateEmailToken(String email) {
+    public String generateInvitationToken(String email) {
+        return generatePurposeToken(email, INVITATION, null);
+    }
+
+    // The token is bound to the user's current password hash, so it stops working once the
+    // password has been changed (i.e. it is single-use) without needing a token table.
+    public String generatePasswordResetToken(User user) {
+        return generatePurposeToken(user.getEmail(), PASSWORD_RESET, passwordFingerprint(user.getPassword()));
+    }
+
+    public boolean isInvitationTokenValid(String token, String email) {
+        Claims claims = parsePurposeToken(token, INVITATION, email);
+        return claims != null;
+    }
+
+    public boolean isPasswordResetTokenValid(String token, User user) {
+        Claims claims = parsePurposeToken(token, PASSWORD_RESET, user.getEmail());
+        return claims != null && passwordFingerprint(user.getPassword()).equals(claims.get("pwd"));
+    }
+
+    private static final String INVITATION = "INVITATION";
+    private static final String PASSWORD_RESET = "PASSWORD_RESET";
+
+    private String generatePurposeToken(String email, String type, String passwordFingerprint) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("type", "EMAIL_VERIFICATION");
+        claims.put("type", type);
+        if (passwordFingerprint != null) {
+            claims.put("pwd", passwordFingerprint);
+        }
 
         return Jwts.builder()
                 .claims(claims)
@@ -87,16 +119,30 @@ public class JwtService {
                 .compact();
     }
 
-    public boolean isEmailTokenValid(String token) {
-        var claims = extractAllClaims(token);
-
-        if (!"EMAIL_VERIFICATION".equals(claims.get("type"))) {
-            return false;
+    // Returns the claims only if the token is well-formed, unexpired, of the expected type and issued for this email.
+    private Claims parsePurposeToken(String token, String type, String email) {
+        if (token == null || email == null) {
+            return null;
         }
-        return !isTokenExpired(claims);
+        Claims claims;
+        try {
+            claims = extractAllClaims(token);
+        } catch (JwtException | IllegalArgumentException e) {
+            return null;
+        }
+        if (!type.equals(claims.get("type")) || !email.equalsIgnoreCase(claims.getSubject()) || isTokenExpired(claims)) {
+            return null;
+        }
+        return claims;
     }
 
-    public String extractEmailFromToken(String token) {
-        return extractAllClaims(token).getSubject();
+    private String passwordFingerprint(String passwordHash) {
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256")
+                    .digest(String.valueOf(passwordHash).getBytes(StandardCharsets.UTF_8));
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(digest);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
     }
 }

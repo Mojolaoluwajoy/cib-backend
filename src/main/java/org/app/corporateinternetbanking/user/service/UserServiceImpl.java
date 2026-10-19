@@ -55,7 +55,7 @@ public class UserServiceImpl implements UserService {
         user.setRole(invitationRequest.getRole());
         user.setOrganization(organization);
         user.setStatus(UserStatus.INACTIVE);
-        String token = jwtService.generateEmailToken(invitationRequest.getUserEmail());
+        String token = jwtService.generateInvitationToken(invitationRequest.getUserEmail());
         sendMail(invitationRequest, token);
         repository.save(user);
         return invitationRequest.getUserEmail();
@@ -64,7 +64,8 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserResponse createUserWithToken(UserRegistrationRequest request) throws UserAlreadyRegistered, OrganizationDoesNotExist, TokenExpiredOrInvalid, SuperAdminAlreadyExists, UserNotFound {
 
-        if (!jwtService.isEmailTokenValid(request.getToken())) {
+        // The token must be an invitation issued for this exact email, not any valid token.
+        if (!jwtService.isInvitationTokenValid(request.getToken(), request.getEmail())) {
             throw new TokenExpiredOrInvalid("Token expired or its invalid");
         }
         User user = repository.findByEmail(request.getEmail())
@@ -118,8 +119,13 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public PasswordResetResponse resetPassword(PasswordResetRequest passwordResetRequest) throws IncorrectPassword, InvalidEmail {
-        User user = repository.findByEmail(passwordResetRequest.getEmail())
-                .orElseThrow(() -> new InvalidEmail("Email not found"));
+        // Always change the logged-in user's password; the email in the body is not trusted.
+        User user;
+        try {
+            user = getCurrentUser();
+        } catch (UserNotFound e) {
+            throw new InvalidEmail("Email not found");
+        }
         if (passwordEncoder.matches(passwordResetRequest.getOldPassword(), user.getPassword())) {
             String newPassword = passwordEncoder.encode(passwordResetRequest.getNewPassword());
             user.setPassword(newPassword);
@@ -134,11 +140,11 @@ public class UserServiceImpl implements UserService {
     public String resetForgottenPassword(ForgotPasswordRequest forgotPasswordRequest) throws InvalidEmail, TokenExpiredOrInvalid {
         User user = repository.findByEmail(forgotPasswordRequest.getEmail())
                 .orElseThrow(() -> new InvalidEmail("Email not found"));
-        if (!jwtService.isEmailTokenValid(forgotPasswordRequest.getToken())) {
+        // Token must be a reset token for this user, issued before their current password was set.
+        if (!jwtService.isPasswordResetTokenValid(forgotPasswordRequest.getToken(), user)) {
             throw new TokenExpiredOrInvalid("Token expired or its invalid");
         }
         user.setPassword(passwordEncoder.encode(forgotPasswordRequest.getNewPassword()));
-        user.setPassword(forgotPasswordRequest.getNewPassword());
         repository.save(user);
         return "Password reset successful";
     }
@@ -148,7 +154,7 @@ public class UserServiceImpl implements UserService {
     public PasswordResetResponse sendForgotPasswordToken(String email) throws InvalidEmail {
         User user = repository.findByEmail(email)
                 .orElseThrow(() -> new InvalidEmail("Email not found"));
-        String token = jwtService.generateEmailToken(email);
+        String token = jwtService.generatePasswordResetToken(user);
         senderService.sendEmail(user.getEmail(), "Password reset token", "Your password reset token is: \n" + token);
         return PasswordResetResponseMap.resetResponseMap(user);
     }
