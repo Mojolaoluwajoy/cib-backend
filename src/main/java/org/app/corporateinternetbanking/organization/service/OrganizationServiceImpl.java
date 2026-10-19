@@ -1,7 +1,7 @@
 package org.app.corporateinternetbanking.organization.service;
 
 import lombok.RequiredArgsConstructor;
-import org.app.corporateinternetbanking.integration.paystack.FeignConfiguration;
+import lombok.extern.slf4j.Slf4j;
 import org.app.corporateinternetbanking.integration.paystack.PayStackClient;
 import org.app.corporateinternetbanking.integration.paystack.dto.CreateCustomerRequest;
 import org.app.corporateinternetbanking.integration.paystack.dto.CreateDvaRequest;
@@ -23,6 +23,7 @@ import org.app.corporateinternetbanking.user.enums.UserStatus;
 import org.app.corporateinternetbanking.user.exceptions.UserAlreadyRegistered;
 import org.app.corporateinternetbanking.user.exceptions.UserNotFound;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +33,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrganizationServiceImpl implements OrganizationService {
@@ -44,8 +46,8 @@ public class OrganizationServiceImpl implements OrganizationService {
     UserRepository userRepository;
     @Autowired
     PasswordEncoder passwordEncoder;
-    @Autowired
-    FeignConfiguration feignConfiguration;
+    @Value("${paystack.dva.preferred-bank}")
+    private String dvaPreferredBank;
 
     @Override
     @Transactional
@@ -94,40 +96,34 @@ public class OrganizationServiceImpl implements OrganizationService {
         if (approvalRequest.getUserStatus().equals(UserStatus.ACTIVE))
             user.setStatus(UserStatus.ACTIVE);
 
+        // Provision the Paystack customer + DVA before persisting the approval. If Paystack
+        // fails, the FeignException propagates and the organization stays PENDING, so the
+        // approval can simply be retried instead of leaving an APPROVED org with no DVA.
+        if (organization.getOrganizationStatus() == OrganizationStatus.APPROVED) {
+            provisionDedicatedAccount(organization);
+        }
+
         organization.setApprovedAt(LocalDateTime.now());
         Organization savedOrganization = repository.save(organization);
         User savedUser = userRepository.save(user);
 
-        if (approvalRequest.getOrganizationStatus().equals(OrganizationStatus.APPROVED)) {
+        return ApprovalMap.mapApprovalResponse(savedOrganization, savedUser);
+    }
 
+    private void provisionDedicatedAccount(Organization organization) {
+        if (organization.getPaystackCustomerCode() == null) {
             CreateCustomerRequest createCustomerRequest = new CreateCustomerRequest(organization.getOrganizationEmail(),
                     organization.getName(), "Organization", organization.getPhoneNumber());
-
-            PaystackCustomerResponse customerResponse = payStackClient.createCustomer(
-                    feignConfiguration.getAuthHeader(),
-                    createCustomerRequest
-            );
-            String customerCode = customerResponse.getData().getCustomerCode();
-
-            organization.setPaystackCustomerCode(customerCode);
-            repository.save(organization);
-
-            CreateDvaRequest dvaRequest = new CreateDvaRequest(customerCode);
-
-            PaystackDvaResponse dvaResponse = payStackClient.createDedicatedAccount(
-                    feignConfiguration.getAuthHeader(),
-                    dvaRequest
-            );
-            System.out.println("DEBUG: Customer response: " + customerResponse);
-            System.out.println("DEBUG: Customer code: " + customerResponse.getData().getCustomerCode());
-            organization.setDvaAccountNumber(dvaResponse.getData().getAccountNumber());
-
-            organization.setDvaBankName(dvaResponse.getData().getBank().getName());
-
-            repository.save(organization);
+            PaystackCustomerResponse customerResponse = payStackClient.createCustomer(createCustomerRequest);
+            organization.setPaystackCustomerCode(customerResponse.getData().getCustomerCode());
         }
 
-        return ApprovalMap.mapApprovalResponse(savedOrganization, savedUser);
+        PaystackDvaResponse dvaResponse = payStackClient.createDedicatedAccount(
+                new CreateDvaRequest(organization.getPaystackCustomerCode(), dvaPreferredBank));
+        log.info("Created DVA for organization {} with customer code {}", organization.getId(), organization.getPaystackCustomerCode());
+
+        organization.setDvaAccountNumber(dvaResponse.getData().getAccountNumber());
+        organization.setDvaBankName(dvaResponse.getData().getBank().getName());
     }
 
     @Override

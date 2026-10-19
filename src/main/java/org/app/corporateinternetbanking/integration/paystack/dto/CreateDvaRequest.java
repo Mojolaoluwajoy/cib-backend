@@ -10,11 +10,12 @@ public class CreateDvaRequest {
 
     private String customer;
 
+    // "test-bank" with test keys; "wema-bank" or "titan-paystack" with live keys
     @JsonProperty("preferred_bank")
     private String preferredBank;
 
-    public CreateDvaRequest(String customerCode) {
+    public CreateDvaRequest(String customerCode, String preferredBank) {
         this.customer = customerCode;
-        this.preferredBank = "titan-paystack";
+        this.preferredBank = preferredBank;
     }
 }

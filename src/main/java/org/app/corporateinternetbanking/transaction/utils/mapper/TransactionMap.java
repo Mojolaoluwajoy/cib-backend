@@ -32,7 +32,7 @@ public class TransactionMap {
         response.setAmount(transaction.getAmount());
         response.setType(transaction.getType());
         response.setStatus(transaction.getStatus());
-        response.setTransactionReference(transaction.getIdempotencyKey());
+        response.setTransactionReference(transaction.getReference());
         response.setCreator(new UserIdDto(transaction.getCreatedBy().getId()));
         return response;
     }

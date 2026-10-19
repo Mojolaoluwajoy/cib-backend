@@ -1,5 +1,6 @@
 package org.app.corporateinternetbanking.transaction.service;
 
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.app.corporateinternetbanking.account.domain.entity.Account;
@@ -28,7 +29,6 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.app.corporateinternetbanking.transaction.utils.mapper.ApprovalMap.mapApprovalRequest;
 import static org.app.corporateinternetbanking.transaction.utils.mapper.ApprovalMap.mapApprovalResponse;
 
 @Slf4j
@@ -51,26 +51,26 @@ public class ApprovalService {
         if (!approver.getRole().equals(UserRole.APPROVER)) {
             throw new UnauthorizedAccess("The approver must have the role  APPROVER");
         }
-        if (!transaction.getStatus().name().equalsIgnoreCase("PENDING") &&
-                !transaction.getStatus().name().equalsIgnoreCase("PENDING_APPROVAL")) {
-            throw new TransactionAlreadyProcessed("This transaction has been processed");
+        // Only maker-initiated transfers/payouts await approval. Funding (PENDING) is settled by the
+        // Paystack webhook and has no source account, so it must not go through this path.
+        if (transaction.getStatus() != TransactionStatus.PENDING_APPROVAL) {
+            throw new TransactionAlreadyProcessed("This transaction is not awaiting approval");
         }
         if (request.getStatus() != TransactionStatus.SUCCESS && request.getStatus() != TransactionStatus.REJECTED) {
             throw new InvalidStatus("invalid status");
         }
         transaction.setProcessedBy(approver);
+        transaction.setProcessedAt(LocalDateTime.now());
         if (request.getStatus() == TransactionStatus.REJECTED) {
             transaction.setStatus(TransactionStatus.REJECTED);
+            // Funds were only moved from available to reserved at initiation; totalBalance never changed.
             Account sourceAccount = transaction.getSourceAccount();
             BigDecimal amount = transaction.getAmount();
-            sourceAccount.setTotalBalance(sourceAccount.getTotalBalance().add(amount));
             sourceAccount.setAvailableBalance(sourceAccount.getAvailableBalance().add(amount));
             sourceAccount.setReservedBalance(sourceAccount.getReservedBalance().subtract(amount));
             transactionRepository.save(transaction);
             return mapApprovalResponse(transaction);
         }
-        transaction.setProcessedAt(LocalDateTime.now());
-        mapApprovalRequest(request);
         if (transaction.getType() == TransactionType.INTERNAL_TRANSFER) {
             processInternalTransfer(transaction);
         } else if (transaction.getType() == TransactionType.EXTERNAL_PAYOUT) {
@@ -85,14 +85,29 @@ public class ApprovalService {
         if (transaction.getPayoutRecipient() == null) {
             throw new IsNull("Recipient missing");
         }
+        // Persist APPROVED before calling Paystack: in test mode the transfer.success webhook can
+        // arrive before this request finishes, and the webhook only settles APPROVED payouts.
         transaction.setStatus(TransactionStatus.APPROVED);
+        transactionRepository.save(transaction);
 
         Map<String, Object> body = new HashMap<>();
-        body.put("amount", transaction.getAmount().multiply(BigDecimal.valueOf(100)));
-        log.info("Transfer amount in kobo: {}", transaction.getAmount().multiply(BigDecimal.valueOf(100)));
+        body.put("source", "balance");
+        body.put("amount", PayStackClient.toKobo(transaction.getAmount()));
         body.put("recipient", transaction.getPayoutRecipient().getRecipientCode());
         body.put("reference", transaction.getReference());
-        payStackClient.initiateTransfer(body);
+        body.put("reason", "CIB payout " + transaction.getReference());
+        log.info("Initiating Paystack transfer {} for {} kobo", transaction.getReference(), body.get("amount"));
+        try {
+            Map<String, Object> response = payStackClient.initiateTransfer(body);
+            log.info("Paystack transfer response: {}", response.get("message"));
+        } catch (FeignException e) {
+            // Transfer was not created: put it back so it can be approved again or rejected.
+            transaction.setStatus(TransactionStatus.PENDING_APPROVAL);
+            transaction.setProcessedBy(null);
+            transaction.setProcessedAt(null);
+            transactionRepository.save(transaction);
+            throw e;
+        }
     }
 
 

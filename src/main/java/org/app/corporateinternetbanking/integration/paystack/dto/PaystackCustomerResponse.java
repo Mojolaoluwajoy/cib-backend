@@ -14,7 +14,7 @@ public class PaystackCustomerResponse {
     @Setter
     @Getter
     public static class Data {
-        @JsonProperty
+        @JsonProperty("customer_code")
         private String customerCode;
 
 

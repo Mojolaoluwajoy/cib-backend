@@ -16,7 +16,7 @@ public class PaystackDvaResponse {
     @Getter
     public static class Data {
 
-        @JsonProperty
+        @JsonProperty("account_number")
         private String accountNumber;
         private Bank bank;
 

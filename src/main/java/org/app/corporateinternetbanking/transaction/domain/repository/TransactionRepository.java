@@ -18,6 +18,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
 
     Optional<Transaction> findByIdempotencyKey(String idempotencyKey);
 
+    Optional<Transaction> findByReference(String reference);
+
 
     Page<Transaction> findByStatus(TransactionStatus status, Pageable pageable);
 

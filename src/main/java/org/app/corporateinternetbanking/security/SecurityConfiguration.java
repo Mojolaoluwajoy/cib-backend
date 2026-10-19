@@ -43,7 +43,6 @@ public class SecurityConfiguration {
                 "/v3/api-docs",
                 "/webjars/**",
                 "/swagger-resources/**",
-                "/external/fund",
                 "/webhook/paystack",
         };
 
@@ -94,7 +93,7 @@ public class SecurityConfiguration {
                                 UserRole.APPROVER.name(), UserRole.ADMIN.name(),
                                 UserRole.SUPER_ADMIN.name())
                         .requestMatchers("/transactions/transactions").authenticated()
-                        .requestMatchers("/external/payout").hasAnyRole(
+                        .requestMatchers("/external/transaction/**").hasAnyRole(
                                 UserRole.MAKER.name(), UserRole.SUPER_ADMIN.name())
 
                         .requestMatchers("/currencies/status").hasRole(

@@ -16,7 +16,6 @@ import org.app.corporateinternetbanking.user.exceptions.UnauthorizedAccess;
 import org.app.corporateinternetbanking.user.exceptions.UserNotFound;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,7 +39,7 @@ public class PaymentServiceImpl implements PaymentService {
         Map<String, Object> body = new HashMap<>();
 
         body.put("email", fundRequest.getEmail());
-        body.put("amount", fundRequest.getAmount().multiply(BigDecimal.valueOf(100)));
+        body.put("amount", PayStackClient.toKobo(fundRequest.getAmount()));
 
         body.put("reference", response.getTransactionReference());
         return payStackClient.initializeTransaction(body);

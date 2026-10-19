@@ -1,5 +1,6 @@
 package org.app.corporateinternetbanking.commons.exception.handler;
 
+import feign.FeignException;
 import lombok.extern.slf4j.Slf4j;
 import org.app.corporateinternetbanking.account.exception.AccountDoesNotExist;
 import org.app.corporateinternetbanking.account.exception.InvalidAccount;
@@ -176,6 +177,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<GenericResponse> handleNotApproved(NotApproved exception) {
         log.error("Not approved: {}", exception.getMessage());
         return new ResponseEntity<>(GenericResponse.failed(exception.getMessage()), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(FeignException.class)
+    public ResponseEntity<GenericResponse> handleFeignException(FeignException exception) {
+        log.error("External provider error ({} {}): {}", exception.status(), exception.request() != null ? exception.request().url() : "", exception.contentUTF8());
+        return new ResponseEntity<>(GenericResponse.failed("Payment provider error: " + exception.contentUTF8()), HttpStatus.BAD_GATEWAY);
     }
 
 

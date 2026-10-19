@@ -71,7 +71,7 @@ public class TransactionServiceImpl implements TransactionService {
         return account;
     }
 
-    private Transaction validateInternalTransaction(TransferRequest request) throws InvalidAccount, IsNull, AccountDoesNotExist, UserNotFound, InvalidAmount, UnauthorizedAccess, DuplicateTransaction {
+    private Transaction validateInternalTransaction(TransferRequest request) throws InvalidAccount, IsNull, AccountDoesNotExist, UserNotFound, InvalidAmount, UnauthorizedAccess, DuplicateTransaction, InsufficientBalance {
         Transaction transaction = validateTransaction(request);
 
         Account source = validateAccountNumber(request.getSourceAccount());
@@ -80,8 +80,7 @@ public class TransactionServiceImpl implements TransactionService {
             throw new InvalidAccount("Cannot transfer to the same account");
         }
 
-        source.setAvailableBalance(source.getTotalBalance().subtract(request.getAmount()));
-        source.setReservedBalance(source.getReservedBalance().add(request.getAmount()));
+        reserveFunds(source, request.getAmount());
 
         transaction.setSourceAccount(source);
         transaction.setDestinationAccount(destination);
@@ -100,14 +99,13 @@ public class TransactionServiceImpl implements TransactionService {
 
     }
 
-    private Transaction validatePayout(TransferRequest request) throws IsNull, AccountDoesNotExist, UserNotFound, InvalidAmount, UnauthorizedAccess, DuplicateTransaction {
+    private Transaction validatePayout(TransferRequest request) throws IsNull, AccountDoesNotExist, UserNotFound, InvalidAmount, UnauthorizedAccess, DuplicateTransaction, InsufficientBalance {
         Transaction transaction = validateTransaction(request);
 
         Account source = validateAccountNumber(request.getSourceAccount());
         transaction.setSourceAccount(source);
         transaction.setStatus(TransactionStatus.PENDING_APPROVAL);
-        source.setAvailableBalance(source.getTotalBalance().subtract(request.getAmount()));
-        source.setReservedBalance(source.getReservedBalance().add(request.getAmount()));
+        reserveFunds(source, request.getAmount());
 
         PayoutRecipient recipient = payoutRecipientRepository.findById(request.getPayoutRecipientId())
                 .orElseThrow(() -> new IsNull("Recipient not found"));
@@ -117,7 +115,22 @@ public class TransactionServiceImpl implements TransactionService {
 
     }
 
-    private Transaction validateTransaction(TransferRequest request) throws DuplicateTransaction, InvalidAmount, UserNotFound, UnauthorizedAccess {
+    // Moves funds from available to reserved; they leave totalBalance only once the transaction settles.
+    private void reserveFunds(Account source, BigDecimal amount) throws InsufficientBalance {
+        if (source.getAvailableBalance().compareTo(amount) < 0) {
+            throw new InsufficientBalance("Insufficient available balance");
+        }
+        source.setAvailableBalance(source.getAvailableBalance().subtract(amount));
+        source.setReservedBalance(source.getReservedBalance().add(amount));
+    }
+
+    private Transaction validateTransaction(TransferRequest request) throws DuplicateTransaction, InvalidAmount, UserNotFound, UnauthorizedAccess, IsNull {
+        if (request.getIdempotencyKey() == null || request.getIdempotencyKey().isBlank()) {
+            throw new IsNull("idempotencyKey is required");
+        }
+        if (request.getAmount() == null) {
+            throw new IsNull("amount is required");
+        }
         Optional<Transaction> existingTransaction = transactionRepository.findByIdempotencyKey(request.getIdempotencyKey());
 
         if (existingTransaction.isPresent()) {
@@ -140,7 +153,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     public Transaction findByTransactionReference(String transactionReference) throws TransactionDoesNotExist {
-        return transactionRepository.findByIdempotencyKey(transactionReference)
+        return transactionRepository.findByReference(transactionReference)
                 .orElseThrow(() -> new TransactionDoesNotExist("Transaction not found"));
     }
 
