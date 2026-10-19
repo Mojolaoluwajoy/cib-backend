@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.app.corporateinternetbanking.email.EmailSenderService;
 import org.app.corporateinternetbanking.organization.exceptions.OrganizationDoesNotExist;
 import org.app.corporateinternetbanking.security.JwtService;
+import org.app.corporateinternetbanking.security.TenantAccess;
 import org.app.corporateinternetbanking.user.domain.entity.User;
 import org.app.corporateinternetbanking.user.domain.repository.UserRepository;
 import org.app.corporateinternetbanking.user.dto.*;
@@ -44,9 +45,18 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public String sendInvitationTokenToUser(InvitationRequest invitationRequest)
-            throws UserNotFound, UserAlreadyRegistered {
+            throws UserNotFound, UserAlreadyRegistered, UnauthorizedAccess {
         User admin = getCurrentUser();
         org.app.corporateinternetbanking.organization.domain.entity.Organization organization = admin.getOrganization();
+
+        // Invited users join the inviter's organization, so the inviter must have one, and the
+        // platform-level SUPER_ADMIN role can never be handed out through an invitation.
+        if (organization == null) {
+            throw new UnauthorizedAccess("Only an organization admin can invite users into their organization");
+        }
+        if (invitationRequest.getRole() == null || invitationRequest.getRole() == UserRole.SUPER_ADMIN) {
+            throw new UnauthorizedAccess("Invited users must be ADMIN, MAKER or APPROVER");
+        }
 
         if (repository.existsByEmail(invitationRequest.getUserEmail())) {
             throw new UserAlreadyRegistered("User already exists");
@@ -109,12 +119,30 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Page<User> viewByStatus(int page, int size, String status) {
+    public Page<UserResponse> viewByStatus(int page, int size, String status) throws UserNotFound {
+        User currentUser = getCurrentUser();
+        boolean superAdmin = TenantAccess.isSuperAdmin(currentUser);
         Pageable pageable = PageRequest.of(page, size);
-        if (status != null) {
-            return repository.findByStatus(status, pageable);
+
+        UserStatus userStatus = null;
+        if (status != null && !status.isBlank()) {
+            try {
+                userStatus = UserStatus.valueOf(status.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                // Unknown status: return the unfiltered list.
+            }
         }
-        return repository.findAll(pageable);
+
+        Page<User> users;
+        if (superAdmin) {
+            users = userStatus == null ? repository.findAll(pageable) : repository.findByStatus(userStatus, pageable);
+        } else {
+            users = userStatus == null
+                    ? repository.findByOrganization(currentUser.getOrganization(), pageable)
+                    : repository.findByOrganizationAndStatus(currentUser.getOrganization(), userStatus, pageable);
+        }
+        // Map to the response DTO: returning the entity would expose password hashes.
+        return users.map(UserMap::mapResponse);
     }
 
     @Override
@@ -208,10 +236,13 @@ public class UserServiceImpl implements UserService {
             throws UserNotFound, UnauthorizedAccess, UserAlreadyRegistered {
 
         User admin = getCurrentUser();
+        if (admin.getRole() != UserRole.ADMIN && !TenantAccess.isSuperAdmin(admin)) {
+            throw new UnauthorizedAccess("Only an admin can update other users' profiles");
+        }
 
         User targetUser = repository.findById(userId).orElseThrow(() -> new UserNotFound("User not found"));
 
-        if (!targetUser.getOrganization().getId().equals(admin.getOrganization().getId())) {
+        if (!TenantAccess.canAccess(admin, targetUser.getOrganization())) {
             throw new UnauthorizedAccess("This user is not in your organization");
         }
 

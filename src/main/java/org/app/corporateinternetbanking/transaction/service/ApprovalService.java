@@ -16,6 +16,7 @@ import org.app.corporateinternetbanking.integration.currency.CurrencyExchangeSer
 import org.app.corporateinternetbanking.integration.paystack.PayStackClient;
 import org.app.corporateinternetbanking.ledger.enums.EntryType;
 import org.app.corporateinternetbanking.ledger.service.LedgerService;
+import org.app.corporateinternetbanking.security.TenantAccess;
 import org.app.corporateinternetbanking.transaction.domain.entity.Transaction;
 import org.app.corporateinternetbanking.transaction.domain.repository.TransactionRepository;
 import org.app.corporateinternetbanking.transaction.dto.TransactionApprovalRequest;
@@ -51,6 +52,10 @@ public class ApprovalService {
         User approver = userService.getCurrentUser();
         if (!approver.getRole().equals(UserRole.APPROVER)) {
             throw new UnauthorizedAccess("The approver must have the role  APPROVER");
+        }
+        // Funds leave the source account's organization, so only that organization's approvers may approve.
+        if (transaction.getSourceAccount() != null) {
+            TenantAccess.assertMemberOf(approver, transaction.getSourceAccount().getOrganization());
         }
         // Only maker-initiated transfers/payouts await approval. Funding (PENDING) is settled by the
         // Paystack webhook and has no source account, so it must not go through this path.

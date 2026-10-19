@@ -2,7 +2,6 @@ package org.app.corporateinternetbanking.user.service;
 
 import java.util.List;
 import org.app.corporateinternetbanking.organization.exceptions.OrganizationDoesNotExist;
-import org.app.corporateinternetbanking.user.domain.entity.User;
 import org.app.corporateinternetbanking.user.dto.*;
 import org.app.corporateinternetbanking.user.exceptions.*;
 import org.springframework.data.domain.Page;
@@ -15,9 +14,10 @@ public interface UserService {
 
     List<UserResponse> ViewAll();
 
-    String sendInvitationTokenToUser(InvitationRequest request) throws UserNotFound, UserAlreadyRegistered;
+    String sendInvitationTokenToUser(InvitationRequest request)
+            throws UserNotFound, UserAlreadyRegistered, UnauthorizedAccess;
 
-    Page<User> viewByStatus(int page, int size, String status);
+    Page<UserResponse> viewByStatus(int page, int size, String status) throws UserNotFound;
 
     PasswordResetResponse resetPassword(PasswordResetRequest passwordResetRequest)
             throws IncorrectPassword, InvalidEmail;

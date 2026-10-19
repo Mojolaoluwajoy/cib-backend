@@ -9,6 +9,7 @@ import org.app.corporateinternetbanking.organization.exceptions.OrganizationAlre
 import org.app.corporateinternetbanking.organization.exceptions.OrganizationAlreadyProcessed;
 import org.app.corporateinternetbanking.organization.exceptions.OrganizationDoesNotExist;
 import org.app.corporateinternetbanking.organization.service.OrganizationService;
+import org.app.corporateinternetbanking.user.exceptions.UnauthorizedAccess;
 import org.app.corporateinternetbanking.user.exceptions.UserAlreadyRegistered;
 import org.app.corporateinternetbanking.user.exceptions.UserNotFound;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,7 +45,8 @@ public class OrganizationController {
 
     @Operation(summary = "Find an organization by id")
     @PostMapping("/findBy")
-    public ResponseEntity<GenericResponse> findById(@RequestBody Long id) throws OrganizationDoesNotExist {
+    public ResponseEntity<GenericResponse> findById(@RequestBody Long id)
+            throws OrganizationDoesNotExist, UserNotFound, UnauthorizedAccess {
         OrganizationOnlyResponse response;
         response = service.viewById(id);
         return new ResponseEntity<>(
@@ -53,7 +55,7 @@ public class OrganizationController {
 
     @Operation(summary = "View all organizations")
     @GetMapping("/viewAll")
-    public ResponseEntity<GenericResponse> viewAll() {
+    public ResponseEntity<GenericResponse> viewAll() throws UserNotFound {
         List<OrganizationOnlyResponse> response = service.viewAll();
         return new ResponseEntity<>(GenericResponse.success(response, "Organization found!"), HttpStatus.OK);
     }
@@ -61,7 +63,8 @@ public class OrganizationController {
     @Operation(summary = "update an organization profile")
     @PutMapping("/{orgId}/profile")
     public ResponseEntity<GenericResponse> updateOrganization(
-            @PathVariable Long orgId, @RequestBody UpdateOrganizationRequest request) throws OrganizationDoesNotExist {
+            @PathVariable Long orgId, @RequestBody UpdateOrganizationRequest request)
+            throws OrganizationDoesNotExist, UserNotFound, UnauthorizedAccess {
         return ResponseEntity.ok(
                 GenericResponse.success(service.updateOrganization(orgId, request), "Organization updated"));
     }

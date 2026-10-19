@@ -26,7 +26,7 @@ public class UserController {
     @Operation(summary = "Send user creation token invitation to email")
     @PostMapping("/invitation")
     public ResponseEntity<GenericResponse> sendInvitation(@RequestBody InvitationRequest request)
-            throws UserNotFound, UserAlreadyRegistered {
+            throws UserNotFound, UserAlreadyRegistered, UnauthorizedAccess {
         String email = service.sendInvitationTokenToUser(request);
         return new ResponseEntity<>(GenericResponse.success(email, "token successfully sent"), HttpStatus.CREATED);
     }
@@ -51,7 +51,8 @@ public class UserController {
     @Operation(summary = "Pageable view of users")
     @GetMapping("/users")
     public ResponseEntity<GenericResponse> getUsers(
-            @RequestParam int page, @RequestParam int size, @RequestParam(required = false) String status) {
+            @RequestParam int page, @RequestParam int size, @RequestParam(required = false) String status)
+            throws UserNotFound {
         return new ResponseEntity<>(
                 GenericResponse.success(service.viewByStatus(page, size, status), "Users found"), HttpStatus.OK);
     }

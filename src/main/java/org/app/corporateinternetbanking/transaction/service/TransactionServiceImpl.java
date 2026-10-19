@@ -17,6 +17,7 @@ import org.app.corporateinternetbanking.account.exception.InvalidAccount;
 import org.app.corporateinternetbanking.organization.domain.entity.Organization;
 import org.app.corporateinternetbanking.organization.domain.repository.OrganizationRepository;
 import org.app.corporateinternetbanking.organization.exceptions.OrganizationDoesNotExist;
+import org.app.corporateinternetbanking.security.TenantAccess;
 import org.app.corporateinternetbanking.transaction.domain.entity.PayoutRecipient;
 import org.app.corporateinternetbanking.transaction.domain.entity.Transaction;
 import org.app.corporateinternetbanking.transaction.domain.repository.PayoutRecipientRepository;
@@ -87,6 +88,8 @@ public class TransactionServiceImpl implements TransactionService {
         if (request.getSourceAccount().equals(request.getDestinationAccount())) {
             throw new InvalidAccount("Cannot transfer to the same account");
         }
+        // Money can only leave the maker's own organization; the destination may be any account in the bank.
+        TenantAccess.assertMemberOf(transaction.getCreatedBy(), source.getOrganization());
 
         reserveFunds(source, request.getAmount());
 
@@ -101,6 +104,7 @@ public class TransactionServiceImpl implements TransactionService {
         Transaction transaction = validateTransaction(request);
 
         Account destination = validateAccountNumber(request.getDestinationAccount());
+        TenantAccess.assertMemberOf(transaction.getCreatedBy(), destination.getOrganization());
         transaction.setDestinationAccount(destination);
         transaction.setStatus(TransactionStatus.PENDING);
         return transactionRepository.save(transaction);
@@ -112,6 +116,7 @@ public class TransactionServiceImpl implements TransactionService {
         Transaction transaction = validateTransaction(request);
 
         Account source = validateAccountNumber(request.getSourceAccount());
+        TenantAccess.assertMemberOf(transaction.getCreatedBy(), source.getOrganization());
         transaction.setSourceAccount(source);
         transaction.setStatus(TransactionStatus.PENDING_APPROVAL);
         reserveFunds(source, request.getAmount());
@@ -169,23 +174,36 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public List<TransactionResponse> viewPendingTransactions() {
-        List<Transaction> transactions = transactionRepository.findByStatus(TransactionStatus.PENDING_APPROVAL);
+    public List<TransactionResponse> viewPendingTransactions() throws UserNotFound {
+        User currentUser = userService.getCurrentUser();
+        List<Transaction> transactions = TenantAccess.isSuperAdmin(currentUser)
+                ? transactionRepository.findByStatus(TransactionStatus.PENDING_APPROVAL)
+                : transactionRepository.findAllForOrganizationByStatus(
+                        currentUser.getOrganization(), TransactionStatus.PENDING_APPROVAL);
         return transactions.stream().map(TransactionMap::mapResponse).toList();
     }
 
     @Override
-    public Page<TransactionResponse> getTransactions(int page, int size, String status) {
+    public Page<TransactionResponse> getTransactions(int page, int size, String status) throws UserNotFound {
+        User currentUser = userService.getCurrentUser();
+        boolean superAdmin = TenantAccess.isSuperAdmin(currentUser);
+        Organization organization = currentUser.getOrganization();
         Pageable pageable = PageRequest.of(page, size);
         if (status != null && !status.isBlank()) {
             try {
                 TransactionStatus txnStatus = TransactionStatus.valueOf(status.toUpperCase());
-                return transactionRepository.findByStatus(txnStatus, pageable).map(TransactionMap::mapResponse);
+                Page<Transaction> transactions = superAdmin
+                        ? transactionRepository.findByStatus(txnStatus, pageable)
+                        : transactionRepository.findAllForOrganizationByStatus(organization, txnStatus, pageable);
+                return transactions.map(TransactionMap::mapResponse);
             } catch (IllegalArgumentException e) {
-
+                // Unknown status: fall through and return the unfiltered list.
             }
         }
-        return transactionRepository.findAll(pageable).map(TransactionMap::mapResponse);
+        Page<Transaction> transactions = superAdmin
+                ? transactionRepository.findAll(pageable)
+                : transactionRepository.findAllForOrganization(organization, pageable);
+        return transactions.map(TransactionMap::mapResponse);
     }
 
     @Transactional
@@ -234,14 +252,14 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     public Page<TransactionResponse> getTransactionsByOrganization(Long orgId, int page, int size)
-            throws OrganizationDoesNotExist {
+            throws OrganizationDoesNotExist, UserNotFound, UnauthorizedAccess {
         Organization org = organizationRepository
                 .findById(orgId)
                 .orElseThrow(() -> new OrganizationDoesNotExist("Organization not found"));
+        TenantAccess.assertCanAccess(userService.getCurrentUser(), org);
 
         Pageable pageable = PageRequest.of(page, size);
-        // You'll need to add this query to your TransactionRepository
-        Page<Transaction> transactions = transactionRepository.findAllBySourceAccount_Organization(org, pageable);
+        Page<Transaction> transactions = transactionRepository.findAllForOrganization(org, pageable);
 
         return transactions.map(TransactionMap::mapResponse);
     }

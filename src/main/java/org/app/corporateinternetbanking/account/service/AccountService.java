@@ -11,15 +11,16 @@ import org.app.corporateinternetbanking.currency.exceptions.CurrencyNotFound;
 import org.app.corporateinternetbanking.organization.exceptions.OrganizationDoesNotExist;
 import org.app.corporateinternetbanking.transaction.exceptions.InsufficientBalance;
 import org.app.corporateinternetbanking.transaction.exceptions.IsNull;
+import org.app.corporateinternetbanking.user.exceptions.UnauthorizedAccess;
 import org.app.corporateinternetbanking.user.exceptions.UserNotFound;
 
 public interface AccountService {
     AccountResponse createAccount(AccountRequest request)
             throws OrganizationDoesNotExist, UserNotFound, CurrencyNotFound, CurrencyNotActive;
 
-    List<AccountResponse> viewAll();
+    List<AccountResponse> viewAll() throws UserNotFound;
 
-    AccountResponse findById(Long id) throws AccountDoesNotExist;
+    AccountResponse findById(Long id) throws AccountDoesNotExist, UserNotFound, UnauthorizedAccess;
 
     void credit(Long accountId, BigDecimal amount) throws AccountDoesNotExist;
 

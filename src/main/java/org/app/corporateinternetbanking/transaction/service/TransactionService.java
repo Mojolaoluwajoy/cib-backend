@@ -19,9 +19,9 @@ public interface TransactionService {
             throws InvalidAmount, AccountDoesNotExist, UserNotFound, UnauthorizedAccess, DuplicateTransaction,
                     InsufficientBalance, InvalidAccount, IsNull;
 
-    List<TransactionResponse> viewPendingTransactions();
+    List<TransactionResponse> viewPendingTransactions() throws UserNotFound;
 
-    Page<TransactionResponse> getTransactions(int page, int size, String status);
+    Page<TransactionResponse> getTransactions(int page, int size, String status) throws UserNotFound;
 
     void expirePendingTransactions();
 
@@ -34,5 +34,5 @@ public interface TransactionService {
     Transaction findByTransactionReference(String transactionReference) throws TransactionDoesNotExist;
 
     Page<TransactionResponse> getTransactionsByOrganization(Long orgId, int page, int size)
-            throws OrganizationDoesNotExist;
+            throws OrganizationDoesNotExist, UserNotFound, UnauthorizedAccess;
 }

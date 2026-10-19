@@ -9,6 +9,8 @@ import org.app.corporateinternetbanking.transaction.enums.TransactionStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
 
@@ -28,5 +30,23 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
 
     List<Transaction> findAllByStatus(TransactionStatus transactionStatus);
 
-    Page<Transaction> findAllBySourceAccount_Organization(Organization organization, Pageable pageable);
+    // A transaction belongs to an organization if either side of it is one of the organization's accounts
+    // (funding and DVA deposits only have a destination account).
+    String ORGANIZATION_SCOPE =
+            "select t from Transaction t left join t.sourceAccount s left join t.destinationAccount d"
+                    + " where (s.organization = :org or d.organization = :org)";
+
+    @Query(ORGANIZATION_SCOPE)
+    Page<Transaction> findAllForOrganization(@Param("org") Organization organization, Pageable pageable);
+
+    @Query(ORGANIZATION_SCOPE)
+    List<Transaction> findAllForOrganization(@Param("org") Organization organization);
+
+    @Query(ORGANIZATION_SCOPE + " and t.status = :status")
+    Page<Transaction> findAllForOrganizationByStatus(
+            @Param("org") Organization organization, @Param("status") TransactionStatus status, Pageable pageable);
+
+    @Query(ORGANIZATION_SCOPE + " and t.status = :status")
+    List<Transaction> findAllForOrganizationByStatus(
+            @Param("org") Organization organization, @Param("status") TransactionStatus status);
 }

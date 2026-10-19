@@ -62,7 +62,7 @@ public class TransactionController {
 
     @Operation(summary = "View all pending transactions")
     @GetMapping("pending")
-    public ResponseEntity<GenericResponse> viewPendingTransactions() {
+    public ResponseEntity<GenericResponse> viewPendingTransactions() throws UserNotFound {
         List<TransactionResponse> response = service.viewPendingTransactions();
         return new ResponseEntity<>(GenericResponse.success(response, "Pending transactions found"), HttpStatus.OK);
     }
@@ -71,17 +71,18 @@ public class TransactionController {
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'MAKER', 'APPROVER')")
     @GetMapping("/transactions")
     public ResponseEntity<GenericResponse> getTransactions(
-            @RequestParam int page, @RequestParam int size, @RequestParam(required = false) String status) {
+            @RequestParam int page, @RequestParam int size, @RequestParam(required = false) String status)
+            throws UserNotFound {
         return new ResponseEntity<>(
                 GenericResponse.success(service.getTransactions(page, size, status), "Transactions found"),
                 HttpStatus.OK);
     }
 
-    //
     @Operation(summary = "get all transaction by an organization")
     @GetMapping("/organization/{orgId}")
     public ResponseEntity<GenericResponse> getOrgTransactions(
-            @PathVariable Long orgId, @RequestParam int page, @RequestParam int size) throws OrganizationDoesNotExist {
+            @PathVariable Long orgId, @RequestParam int page, @RequestParam int size)
+            throws OrganizationDoesNotExist, UserNotFound, UnauthorizedAccess {
         return ResponseEntity.ok(GenericResponse.success(
                 service.getTransactionsByOrganization(orgId, page, size), "Transactions found"));
     }
