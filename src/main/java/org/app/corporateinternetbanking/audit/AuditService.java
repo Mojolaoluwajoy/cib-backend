@@ -2,6 +2,7 @@ package org.app.corporateinternetbanking.audit;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.app.corporateinternetbanking.account.domain.entity.Account;
@@ -23,8 +24,9 @@ public class AuditService {
 
         for (Account account : accounts) {
 
-            LedgerEntry lastLedger = ledgerRepository.findByAccountIdOrderByCreatedAtDesc(account.getId());
-            if (lastLedger == null) continue;
+            Optional<LedgerEntry> latest = ledgerRepository.findFirstByAccountIdOrderByIdDesc(account.getId());
+            if (latest.isEmpty()) continue;
+            LedgerEntry lastLedger = latest.get();
 
             BigDecimal storedBalance = account.getTotalBalance();
             BigDecimal computedBalance = lastLedger.getBalanceAfter();
@@ -40,5 +42,7 @@ public class AuditService {
                 account.setFlagged(false);
             }
         }
+        // Not in a transaction, so the flag changes must be saved explicitly.
+        accountRepository.saveAll(accounts);
     }
 }

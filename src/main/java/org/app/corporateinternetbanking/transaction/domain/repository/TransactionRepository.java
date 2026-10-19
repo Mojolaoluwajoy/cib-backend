@@ -26,6 +26,9 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
 
     List<Transaction> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
 
+    List<Transaction> findByStatusAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+            TransactionStatus status, LocalDateTime start, LocalDateTime end);
+
     List<Transaction> findByCreatedAtBetweenAndStatus(LocalDateTime start, LocalDateTime end, TransactionStatus status);
 
     List<Transaction> findAllByStatus(TransactionStatus transactionStatus);
@@ -49,4 +52,10 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     @Query(ORGANIZATION_SCOPE + " and t.status = :status")
     List<Transaction> findAllForOrganizationByStatus(
             @Param("org") Organization organization, @Param("status") TransactionStatus status);
+
+    @Query(ORGANIZATION_SCOPE + " and t.createdAt >= :start and t.createdAt < :end")
+    List<Transaction> findAllForOrganizationCreatedBetween(
+            @Param("org") Organization organization,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end);
 }

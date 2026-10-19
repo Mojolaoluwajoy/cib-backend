@@ -24,7 +24,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Page<User> findByOrganizationAndStatus(Organization organization, UserStatus status, Pageable pageable);
 
-    Optional<User> findByRole(UserRole userRole);
+    List<User> findAllByRoleAndStatus(UserRole role, UserStatus status);
+
+    List<User> findAllByOrganizationAndRoleAndStatus(Organization organization, UserRole role, UserStatus status);
 
     Optional<User> findByPassword(String password);
 
