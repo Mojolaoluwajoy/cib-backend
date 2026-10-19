@@ -3,7 +3,6 @@ package org.app.corporateinternetbanking.transaction.service;
 import static org.app.corporateinternetbanking.transaction.utils.mapper.TransactionMap.mapRequest;
 import static org.app.corporateinternetbanking.transaction.utils.mapper.TransactionMap.mapResponse;
 
-import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -14,6 +13,7 @@ import org.app.corporateinternetbanking.account.domain.entity.Account;
 import org.app.corporateinternetbanking.account.domain.repository.AccountRepository;
 import org.app.corporateinternetbanking.account.exception.AccountDoesNotExist;
 import org.app.corporateinternetbanking.account.exception.InvalidAccount;
+import org.app.corporateinternetbanking.commons.locking.RowLocks;
 import org.app.corporateinternetbanking.notification.service.NotificationService;
 import org.app.corporateinternetbanking.organization.domain.entity.Organization;
 import org.app.corporateinternetbanking.organization.domain.repository.OrganizationRepository;
@@ -39,6 +39,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -48,6 +49,7 @@ public class TransactionServiceImpl implements TransactionService {
     private final UserServiceImpl userService;
     private final OrganizationRepository organizationRepository;
     private final NotificationService notificationService;
+    private final RowLocks rowLocks;
 
     // Transfers/payouts nobody approves within this window expire and release their reserved funds.
     @Value("${transaction.approval.expiry-hours}")
@@ -59,6 +61,9 @@ public class TransactionServiceImpl implements TransactionService {
     @Autowired
     TransactionRepository transactionRepository;
 
+    // One database transaction per initiation: the source account is row-locked while funds are reserved,
+    // so concurrent requests against the same account cannot both pass the balance check.
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public TransactionResponse initiateTransaction(TransferRequest request)
             throws InvalidAmount, AccountDoesNotExist, UserNotFound, UnauthorizedAccess, DuplicateTransaction,
@@ -98,6 +103,7 @@ public class TransactionServiceImpl implements TransactionService {
         // Money can only leave the maker's own organization; the destination may be any account in the bank.
         TenantAccess.assertMemberOf(transaction.getCreatedBy(), source.getOrganization());
 
+        rowLocks.lockAccounts(source);
         reserveFunds(source, request.getAmount());
 
         transaction.setSourceAccount(source);
@@ -126,6 +132,7 @@ public class TransactionServiceImpl implements TransactionService {
         TenantAccess.assertMemberOf(transaction.getCreatedBy(), source.getOrganization());
         transaction.setSourceAccount(source);
         transaction.setStatus(TransactionStatus.PENDING_APPROVAL);
+        rowLocks.lockAccounts(source);
         reserveFunds(source, request.getAmount());
 
         PayoutRecipient recipient = payoutRecipientRepository
@@ -236,8 +243,14 @@ public class TransactionServiceImpl implements TransactionService {
                 transactionRepository.findByStatusAndCreatedAtBefore(TransactionStatus.PENDING_APPROVAL, cutoff);
 
         for (Transaction transaction : unapproved) {
+            rowLocks.lockTransaction(transaction);
+            // An approver may have processed it while this job was running.
+            if (transaction.getStatus() != TransactionStatus.PENDING_APPROVAL) {
+                continue;
+            }
             // Funds were moved from available to reserved at initiation; give them back.
             Account source = transaction.getSourceAccount();
+            rowLocks.lockAccounts(source);
             BigDecimal amount = transaction.getAmount();
             source.setAvailableBalance(source.getAvailableBalance().add(amount));
             source.setReservedBalance(source.getReservedBalance().subtract(amount));
