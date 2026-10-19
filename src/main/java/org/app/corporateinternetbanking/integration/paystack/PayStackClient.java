@@ -1,5 +1,8 @@
 package org.app.corporateinternetbanking.integration.paystack;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.Map;
 import org.app.corporateinternetbanking.integration.paystack.dto.CreateCustomerRequest;
 import org.app.corporateinternetbanking.integration.paystack.dto.CreateDvaRequest;
 import org.app.corporateinternetbanking.integration.paystack.dto.PaystackCustomerResponse;
@@ -8,15 +11,8 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.Map;
-
 // The Authorization header is added by FeignConfiguration's interceptor.
-@FeignClient(
-        name = "paystack-client",
-        url = "https://api.paystack.co",
-        configuration = FeignConfiguration.class)
+@FeignClient(name = "paystack-client", url = "https://api.paystack.co", configuration = FeignConfiguration.class)
 public interface PayStackClient {
 
     @PostMapping("/transaction/initialize")
@@ -38,5 +34,4 @@ public interface PayStackClient {
     static long toKobo(BigDecimal naira) {
         return naira.movePointRight(2).setScale(0, RoundingMode.HALF_UP).longValueExact();
     }
-
 }

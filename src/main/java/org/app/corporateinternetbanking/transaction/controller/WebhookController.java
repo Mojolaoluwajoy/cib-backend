@@ -28,8 +28,9 @@ public class WebhookController {
     @PostMapping("/paystack")
     public ResponseEntity<GenericResponse> handleWebhook(
             @RequestBody String payload,
-            @RequestHeader(value = "x-paystack-signature", required = false) String signature) throws AccountDoesNotExist, InvalidSignature, NotApproved {
-        return new ResponseEntity<>(GenericResponse.success(webhookHandler.handleWebhook(payload, signature), "Received"), HttpStatus.OK);
+            @RequestHeader(value = "x-paystack-signature", required = false) String signature)
+            throws AccountDoesNotExist, InvalidSignature, NotApproved {
+        return new ResponseEntity<>(
+                GenericResponse.success(webhookHandler.handleWebhook(payload, signature), "Received"), HttpStatus.OK);
     }
-
 }

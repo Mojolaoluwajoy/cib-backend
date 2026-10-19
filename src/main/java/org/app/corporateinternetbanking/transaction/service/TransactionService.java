@@ -1,5 +1,7 @@
 package org.app.corporateinternetbanking.transaction.service;
 
+import java.math.BigDecimal;
+import java.util.List;
 import org.app.corporateinternetbanking.account.exception.AccountDoesNotExist;
 import org.app.corporateinternetbanking.account.exception.InvalidAccount;
 import org.app.corporateinternetbanking.organization.exceptions.OrganizationDoesNotExist;
@@ -11,13 +13,11 @@ import org.app.corporateinternetbanking.user.exceptions.UnauthorizedAccess;
 import org.app.corporateinternetbanking.user.exceptions.UserNotFound;
 import org.springframework.data.domain.Page;
 
-import java.math.BigDecimal;
-import java.util.List;
-
 public interface TransactionService {
 
-    TransactionResponse initiateTransaction(TransferRequest request) throws InvalidAmount, AccountDoesNotExist, UserNotFound, UnauthorizedAccess, DuplicateTransaction, InsufficientBalance, InvalidAccount, IsNull;
-
+    TransactionResponse initiateTransaction(TransferRequest request)
+            throws InvalidAmount, AccountDoesNotExist, UserNotFound, UnauthorizedAccess, DuplicateTransaction,
+                    InsufficientBalance, InvalidAccount, IsNull;
 
     List<TransactionResponse> viewPendingTransactions();
 
@@ -33,7 +33,6 @@ public interface TransactionService {
 
     Transaction findByTransactionReference(String transactionReference) throws TransactionDoesNotExist;
 
-    Page<TransactionResponse> getTransactionsByOrganization(
-            Long orgId, int page, int size) throws OrganizationDoesNotExist;
-
+    Page<TransactionResponse> getTransactionsByOrganization(Long orgId, int page, int size)
+            throws OrganizationDoesNotExist;
 }

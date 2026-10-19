@@ -6,7 +6,6 @@ import org.app.corporateinternetbanking.user.dto.UserResponse;
 
 public class UserMap {
 
-
     public static UserResponse mapResponse(User user) {
         UserResponse response = new UserResponse();
         response.setUserId(user.getUserId());
@@ -16,7 +15,6 @@ public class UserMap {
         response.setNin(user.getNin());
         response.setRole(user.getRole());
         response.setStatus(user.getStatus());
-
 
         if (user.getOrganization() != null) {
             response.setOrganizationId(new OrganizationId(user.getOrganization().getId()));

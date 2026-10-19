@@ -11,21 +11,19 @@ public class PaystackDvaResponse {
     private boolean status;
     private Data data;
 
-
     @Setter
     @Getter
     public static class Data {
 
         @JsonProperty("account_number")
         private String accountNumber;
-        private Bank bank;
 
+        private Bank bank;
     }
 
     @Setter
     @Getter
     public static class Bank {
         private String name;
-
     }
 }

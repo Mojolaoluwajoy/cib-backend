@@ -1,11 +1,10 @@
 package org.app.corporateinternetbanking.currency.service;
 
+import java.util.List;
 import org.app.corporateinternetbanking.currency.dto.CurrencyRequest;
 import org.app.corporateinternetbanking.currency.dto.CurrencyResponse;
 import org.app.corporateinternetbanking.currency.enums.CurrencyStatus;
 import org.app.corporateinternetbanking.currency.exceptions.CurrencyNotFound;
-
-import java.util.List;
 
 public interface CurrencyService {
 
@@ -13,9 +12,7 @@ public interface CurrencyService {
 
     //  List<CurrencyResponse> viewActiveCurrencies();
 
-
     List<CurrencyResponse> viewAll();
 
     List<CurrencyResponse> viewByStatus(CurrencyStatus status);
-
 }

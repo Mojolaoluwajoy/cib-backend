@@ -12,5 +12,4 @@ public class OrganizationApprovalRequest {
     private Long adminId;
     private OrganizationStatus organizationStatus;
     private UserStatus userStatus;
-
 }

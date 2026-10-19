@@ -2,6 +2,7 @@ package org.app.corporateinternetbanking.organization.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
 import org.app.corporateinternetbanking.commons.response.GenericResponse;
 import org.app.corporateinternetbanking.organization.dto.*;
 import org.app.corporateinternetbanking.organization.exceptions.OrganizationAlreadyExist;
@@ -15,8 +16,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/organizations")
 @Tag(name = "Organization API", description = "Handles organizations")
@@ -26,16 +25,21 @@ public class OrganizationController {
 
     @Operation(summary = "Send organization and admin registration request")
     @PostMapping("/create")
-    public ResponseEntity<GenericResponse> createOrganization(@RequestBody OrganizationRequest request) throws UserAlreadyRegistered, OrganizationAlreadyExist {
+    public ResponseEntity<GenericResponse> createOrganization(@RequestBody OrganizationRequest request)
+            throws UserAlreadyRegistered, OrganizationAlreadyExist {
         OrganizationRegistrationResponse response = service.registerOrganization(request);
-        return new ResponseEntity<>(GenericResponse.success(response, "Organization registration complete,awaiting approval"), HttpStatus.OK);
+        return new ResponseEntity<>(
+                GenericResponse.success(response, "Organization registration complete,awaiting approval"),
+                HttpStatus.OK);
     }
 
     @Operation(summary = "Approve organization and admin registration request")
     @PostMapping("/approve")
-    public ResponseEntity<GenericResponse> approveOrganization(@RequestBody OrganizationApprovalRequest request) throws UserAlreadyRegistered, UserNotFound, OrganizationAlreadyProcessed, OrganizationDoesNotExist {
+    public ResponseEntity<GenericResponse> approveOrganization(@RequestBody OrganizationApprovalRequest request)
+            throws UserAlreadyRegistered, UserNotFound, OrganizationAlreadyProcessed, OrganizationDoesNotExist {
         OrganizationApprovalResponse response = service.processOrganizationRegistration(request);
-        return new ResponseEntity<>(GenericResponse.success(response, "Organization successfully processed"), HttpStatus.OK);
+        return new ResponseEntity<>(
+                GenericResponse.success(response, "Organization successfully processed"), HttpStatus.OK);
     }
 
     @Operation(summary = "Find an organization by id")
@@ -43,7 +47,8 @@ public class OrganizationController {
     public ResponseEntity<GenericResponse> findById(@RequestBody Long id) throws OrganizationDoesNotExist {
         OrganizationOnlyResponse response;
         response = service.viewById(id);
-        return new ResponseEntity<>(GenericResponse.success(response, "Organization with the specified id found"), HttpStatus.OK);
+        return new ResponseEntity<>(
+                GenericResponse.success(response, "Organization with the specified id found"), HttpStatus.OK);
     }
 
     @Operation(summary = "View all organizations")
@@ -56,9 +61,8 @@ public class OrganizationController {
     @Operation(summary = "update an organization profile")
     @PutMapping("/{orgId}/profile")
     public ResponseEntity<GenericResponse> updateOrganization(
-            @PathVariable Long orgId,
-            @RequestBody UpdateOrganizationRequest request) throws OrganizationDoesNotExist {
-        return ResponseEntity.ok(GenericResponse.success(
-                service.updateOrganization(orgId, request), "Organization updated"));
+            @PathVariable Long orgId, @RequestBody UpdateOrganizationRequest request) throws OrganizationDoesNotExist {
+        return ResponseEntity.ok(
+                GenericResponse.success(service.updateOrganization(orgId, request), "Organization updated"));
     }
 }

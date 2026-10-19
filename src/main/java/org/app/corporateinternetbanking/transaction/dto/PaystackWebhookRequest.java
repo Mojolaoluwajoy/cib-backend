@@ -16,6 +16,7 @@ public class PaystackWebhookRequest {
         private String reference;
         private String status;
         private Long amount;
+
         @JsonProperty
         private Customer customer;
 

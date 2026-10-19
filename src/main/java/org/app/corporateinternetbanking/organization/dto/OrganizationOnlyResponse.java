@@ -14,6 +14,4 @@ public class OrganizationOnlyResponse {
     private OrganizationStatus organizationStatus;
     private String dvaAccountNumber;
     private String dvaBankName;
-
-
 }

@@ -17,6 +17,4 @@ public class OrganizationRequest {
     private String password;
     private String nin;
     private String organizationEmail;
-
-
 }

@@ -2,6 +2,15 @@ package org.app.corporateinternetbanking.transaction.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
+import java.security.MessageDigest;
+import java.time.LocalDateTime;
+import java.util.HexFormat;
+import java.util.Optional;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.app.corporateinternetbanking.account.domain.entity.Account;
@@ -24,16 +33,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
-import java.security.GeneralSecurityException;
-import java.security.MessageDigest;
-import java.time.LocalDateTime;
-import java.util.HexFormat;
-import java.util.Optional;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -45,13 +44,15 @@ public class WebhookHandler {
     private final TransactionRepository transactionRepository;
     private final AccountService accountService;
     private final ObjectMapper objectMapper;
+
     @Value("${paystack.secret.key}")
     private String secretKey;
 
     // Paystack retries any non-2xx response, so events we have already processed (or don't
     // care about) return normally. Only "not ready yet" situations throw, to get a retry.
     @Transactional(rollbackFor = Exception.class)
-    public String handleWebhook(String payload, String signature) throws InvalidSignature, AccountDoesNotExist, NotApproved {
+    public String handleWebhook(String payload, String signature)
+            throws InvalidSignature, AccountDoesNotExist, NotApproved {
         verifySignature(payload, signature);
 
         PaystackWebhookRequest webhookRequest;
@@ -95,7 +96,8 @@ public class WebhookHandler {
             Mac mac = Mac.getInstance("HmacSHA512");
             mac.init(new SecretKeySpec(secretKey.getBytes(StandardCharsets.UTF_8), "HmacSHA512"));
             String expected = HexFormat.of().formatHex(mac.doFinal(payload.getBytes(StandardCharsets.UTF_8)));
-            if (!MessageDigest.isEqual(expected.getBytes(StandardCharsets.UTF_8),
+            if (!MessageDigest.isEqual(
+                    expected.getBytes(StandardCharsets.UTF_8),
                     signature.trim().toLowerCase().getBytes(StandardCharsets.UTF_8))) {
                 throw new InvalidSignature("Invalid Paystack signature");
             }
@@ -107,7 +109,10 @@ public class WebhookHandler {
     // Card/bank funding started via /external/transaction/fund: reference is our own transaction reference.
     private void settleFunding(Transaction txn, PaystackWebhookRequest.Data data) throws AccountDoesNotExist {
         if (txn.getType() != TransactionType.EXTERNAL_FUNDING) {
-            log.info("charge.success for {} transaction {} already recorded, ignoring", txn.getType(), txn.getReference());
+            log.info(
+                    "charge.success for {} transaction {} already recorded, ignoring",
+                    txn.getType(),
+                    txn.getReference());
             return;
         }
         if (txn.getStatus() != TransactionStatus.PENDING) {
@@ -115,8 +120,11 @@ public class WebhookHandler {
             return;
         }
         if (data.getAmount() == null || data.getAmount() != PayStackClient.toKobo(txn.getAmount())) {
-            log.warn("Funding {} amount mismatch: expected {} kobo, Paystack reported {}",
-                    txn.getReference(), PayStackClient.toKobo(txn.getAmount()), data.getAmount());
+            log.warn(
+                    "Funding {} amount mismatch: expected {} kobo, Paystack reported {}",
+                    txn.getReference(),
+                    PayStackClient.toKobo(txn.getAmount()),
+                    data.getAmount());
             txn.setStatus(TransactionStatus.FAILED);
             txn.setProcessedAt(LocalDateTime.now());
             transactionRepository.save(txn);
@@ -128,8 +136,13 @@ public class WebhookHandler {
         txn.setStatus(TransactionStatus.SUCCESS);
         txn.setProcessedAt(LocalDateTime.now());
         transactionRepository.save(txn);
-        ledgerService.createEntry(destination, txn, EntryType.CREDIT, destination.getCurrency().getCode(),
-                txn.getAmount(), destination.getTotalBalance());
+        ledgerService.createEntry(
+                destination,
+                txn,
+                EntryType.CREDIT,
+                destination.getCurrency().getCode(),
+                txn.getAmount(),
+                destination.getTotalBalance());
     }
 
     // Transfer into an organization's dedicated virtual account: reference is generated by Paystack.
@@ -139,13 +152,17 @@ public class WebhookHandler {
                 ? Optional.empty()
                 : organizationRepository.findByPaystackCustomerCode(customerCode);
         if (organization.isEmpty()) {
-            log.warn("charge.success {} matches no transaction or organization (customer {}), ignoring",
-                    data.getReference(), customerCode);
+            log.warn(
+                    "charge.success {} matches no transaction or organization (customer {}), ignoring",
+                    data.getReference(),
+                    customerCode);
             return;
         }
 
-        Account receivingAccount = accountRepository.findFirstByOrganizationAndCurrencyCodeOrderByCreatedAtAsc(organization.get(), "NGN")
-                .orElseThrow(() -> new AccountDoesNotExist("No NGN account found for org " + organization.get().getId()));
+        Account receivingAccount = accountRepository
+                .findFirstByOrganizationAndCurrencyCodeOrderByCreatedAtAsc(organization.get(), "NGN")
+                .orElseThrow(() -> new AccountDoesNotExist(
+                        "No NGN account found for org " + organization.get().getId()));
 
         BigDecimal amountInNaira = BigDecimal.valueOf(data.getAmount()).movePointLeft(2);
         accountService.credit(receivingAccount.getId(), amountInNaira);
@@ -159,11 +176,18 @@ public class WebhookHandler {
         transaction.setProcessedAt(LocalDateTime.now());
         transactionRepository.save(transaction);
 
-        ledgerService.createEntry(receivingAccount, transaction, EntryType.CREDIT, receivingAccount.getCurrency().getCode(),
-                amountInNaira, receivingAccount.getTotalBalance());
+        ledgerService.createEntry(
+                receivingAccount,
+                transaction,
+                EntryType.CREDIT,
+                receivingAccount.getCurrency().getCode(),
+                amountInNaira,
+                receivingAccount.getTotalBalance());
     }
 
-    private void settlePayout(Optional<Transaction> existing, String reference, boolean succeeded, TransactionStatus outcome) throws NotApproved {
+    private void settlePayout(
+            Optional<Transaction> existing, String reference, boolean succeeded, TransactionStatus outcome)
+            throws NotApproved {
         if (existing.isEmpty() || existing.get().getType() != TransactionType.EXTERNAL_PAYOUT) {
             log.warn("Transfer event for unknown payout {}, ignoring", reference);
             return;
@@ -183,7 +207,8 @@ public class WebhookHandler {
         source.setReservedBalance(source.getReservedBalance().subtract(amount));
         if (succeeded) {
             source.setTotalBalance(source.getTotalBalance().subtract(amount));
-            ledgerService.createEntry(source, txn, EntryType.DEBIT, source.getCurrency().getCode(), amount, source.getTotalBalance());
+            ledgerService.createEntry(
+                    source, txn, EntryType.DEBIT, source.getCurrency().getCode(), amount, source.getTotalBalance());
         } else {
             // Money never left: release the reservation back to available balance.
             source.setAvailableBalance(source.getAvailableBalance().add(amount));
@@ -193,5 +218,4 @@ public class WebhookHandler {
         accountRepository.save(source);
         transactionRepository.save(txn);
     }
-
 }

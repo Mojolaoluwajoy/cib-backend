@@ -2,6 +2,7 @@ package org.app.corporateinternetbanking.account.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
 import org.app.corporateinternetbanking.account.dto.AccountRequest;
 import org.app.corporateinternetbanking.account.dto.AccountResponse;
 import org.app.corporateinternetbanking.account.exception.AccountDoesNotExist;
@@ -17,8 +18,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/accounts")
 @Tag(name = "Account API", description = "Handles accounts")
@@ -28,9 +27,11 @@ public class AccountController {
 
     @Operation(summary = "Create account")
     @PostMapping("/create")
-    public ResponseEntity<GenericResponse> createAccount(@RequestBody AccountRequest request) throws OrganizationDoesNotExist, UserNotFound, CurrencyNotFound, CurrencyNotActive {
+    public ResponseEntity<GenericResponse> createAccount(@RequestBody AccountRequest request)
+            throws OrganizationDoesNotExist, UserNotFound, CurrencyNotFound, CurrencyNotActive {
         AccountResponse response = service.createAccount(request);
-        return new ResponseEntity<>(GenericResponse.success(response, "Account successfully registered"), HttpStatus.OK);
+        return new ResponseEntity<>(
+                GenericResponse.success(response, "Account successfully registered"), HttpStatus.OK);
     }
 
     @Operation(summary = "Find account by id")
@@ -38,7 +39,8 @@ public class AccountController {
     public ResponseEntity<GenericResponse> findById(@RequestBody Long id) throws AccountDoesNotExist {
         AccountResponse response = null;
         response = service.findById(id);
-        return new ResponseEntity<>(GenericResponse.success(response, "Account with the specified id found"), HttpStatus.OK);
+        return new ResponseEntity<>(
+                GenericResponse.success(response, "Account with the specified id found"), HttpStatus.OK);
     }
 
     @Operation(summary = "View all accounts")
@@ -51,22 +53,17 @@ public class AccountController {
     // In AccountController
     @GetMapping("/organization/{orgId}")
     public ResponseEntity<GenericResponse> getOrgAccounts(@PathVariable Long orgId) throws OrganizationDoesNotExist {
-        return ResponseEntity.ok(GenericResponse.success(
-                service.getAccountsByOrganization(orgId), "Accounts found"));
+        return ResponseEntity.ok(GenericResponse.success(service.getAccountsByOrganization(orgId), "Accounts found"));
     }
-
 
     @Operation(summary = "Create account for a specific organization — SUPER_ADMIN only")
     @PostMapping("/create/{orgId}")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<GenericResponse> createAccountForOrg(
-            @PathVariable Long orgId,
-            @RequestBody AccountRequest request)
+            @PathVariable Long orgId, @RequestBody AccountRequest request)
             throws OrganizationDoesNotExist, CurrencyNotFound, CurrencyNotActive, UserNotFound {
         AccountResponse response = service.createAccountForOrg(orgId, request);
         return new ResponseEntity<>(
-                GenericResponse.success(response, "Account successfully registered"),
-                HttpStatus.OK
-        );
+                GenericResponse.success(response, "Account successfully registered"), HttpStatus.OK);
     }
 }

@@ -1,5 +1,8 @@
 package org.app.corporateinternetbanking.transaction.jobs;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.app.corporateinternetbanking.notification.service.NotificationService;
@@ -13,10 +16,6 @@ import org.app.corporateinternetbanking.user.enums.UserRole;
 import org.app.corporateinternetbanking.user.exceptions.NoAdminsPresent;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Slf4j
 @Component
@@ -38,8 +37,10 @@ public class TransactionJobs {
         log.info("checking pending transactions");
         LocalDateTime threshold = LocalDateTime.now().minusHours(10);
 
-        List<Transaction> pending = transactionRepository.findByStatusAndCreatedAtBefore(TransactionStatus.PENDING, threshold);
-        User user = userRepository.findByRole(UserRole.ADMIN)
+        List<Transaction> pending =
+                transactionRepository.findByStatusAndCreatedAtBefore(TransactionStatus.PENDING, threshold);
+        User user = userRepository
+                .findByRole(UserRole.ADMIN)
                 .orElseThrow(() -> new NoAdminsPresent("There's no user with an admin role"));
         if (!pending.isEmpty()) {
             String message = buildMessage(pending);
@@ -56,7 +57,8 @@ public class TransactionJobs {
         LocalDateTime end = LocalDateTime.now();
 
         List<Transaction> createBetween = transactionRepository.findByCreatedAtBetween(start, end);
-        User user = userRepository.findByRole(UserRole.ADMIN)
+        User user = userRepository
+                .findByRole(UserRole.ADMIN)
                 .orElseThrow(() -> new NoAdminsPresent("There's no user with an admin role"));
         if (!createBetween.isEmpty()) {
             String message = buildSummaryReportMessage();
@@ -73,11 +75,13 @@ public class TransactionJobs {
         message.append("Total: ").append(transactions.size()).append("\n\n");
 
         for (Transaction transaction : transactions) {
-            message.append("ID: ").append(transaction.getId())
-                    .append(" | Amount: ").append(transaction.getAmount())
-                    .append(" | Created: ").append(transaction.getCreatedAt())
+            message.append("ID: ")
+                    .append(transaction.getId())
+                    .append(" | Amount: ")
+                    .append(transaction.getAmount())
+                    .append(" | Created: ")
+                    .append(transaction.getCreatedAt())
                     .append("\n");
-
         }
         return message.toString();
     }
@@ -90,18 +94,29 @@ public class TransactionJobs {
         LocalDateTime end = LocalDateTime.now().minusHours(24);
         List<Transaction> transactions = transactionRepository.findByCreatedAtBetween(start, end);
         BigDecimal volume = transactionService.calculateTransactionVolume();
-        List<Transaction> pendingTransactions = transactionRepository.findByCreatedAtBetweenAndStatus(start, end, TransactionStatus.PENDING);
-        List<Transaction> successfulTransactions = transactionRepository.findByCreatedAtBetweenAndStatus(start, end, TransactionStatus.SUCCESS);
-        List<Transaction> expiredTransactions = transactionRepository.findByCreatedAtBetweenAndStatus(start, end, TransactionStatus.EXPIRED);
-        List<Transaction> rejectedTransactions = transactionRepository.findByCreatedAtBetweenAndStatus(start, end, TransactionStatus.REJECTED);
+        List<Transaction> pendingTransactions =
+                transactionRepository.findByCreatedAtBetweenAndStatus(start, end, TransactionStatus.PENDING);
+        List<Transaction> successfulTransactions =
+                transactionRepository.findByCreatedAtBetweenAndStatus(start, end, TransactionStatus.SUCCESS);
+        List<Transaction> expiredTransactions =
+                transactionRepository.findByCreatedAtBetweenAndStatus(start, end, TransactionStatus.EXPIRED);
+        List<Transaction> rejectedTransactions =
+                transactionRepository.findByCreatedAtBetweenAndStatus(start, end, TransactionStatus.REJECTED);
         message.append("Daily summary report\n\n");
         message.append("Total Transactions: ").append(transactions.size()).append("\n\n");
         message.append("Total Transaction volume: ").append(volume).append("\n\n");
-        message.append("Total pending transactions: ").append(pendingTransactions.size()).append("\n\n");
-        message.append("Total successful transactions:").append(successfulTransactions.size()).append("\n\n");
-        message.append("Total expired transactions: ").append(expiredTransactions.size()).append("\n\n");
-        message.append("Total rejected transactions:").append(rejectedTransactions.size()).append("\n\n");
+        message.append("Total pending transactions: ")
+                .append(pendingTransactions.size())
+                .append("\n\n");
+        message.append("Total successful transactions:")
+                .append(successfulTransactions.size())
+                .append("\n\n");
+        message.append("Total expired transactions: ")
+                .append(expiredTransactions.size())
+                .append("\n\n");
+        message.append("Total rejected transactions:")
+                .append(rejectedTransactions.size())
+                .append("\n\n");
         return message.toString();
     }
-
 }

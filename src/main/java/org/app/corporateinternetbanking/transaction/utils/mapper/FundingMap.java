@@ -21,6 +21,5 @@ public class FundingMap {
         transferRequest.setType(TransactionType.EXTERNAL_FUNDING);
         transferRequest.setIdempotencyKey(fundRequest.getIdempotencyKey());
         return transferRequest;
-
     }
 }

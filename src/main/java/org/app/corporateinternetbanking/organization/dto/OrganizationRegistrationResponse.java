@@ -14,7 +14,6 @@ public class OrganizationRegistrationResponse {
     private String registrationNumber;
     private OrganizationStatus organizationStatus;
 
-
     private String userId;
     private String firstName;
     private String lastName;

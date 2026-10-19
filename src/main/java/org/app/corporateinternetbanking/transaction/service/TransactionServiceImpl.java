@@ -1,6 +1,13 @@
 package org.app.corporateinternetbanking.transaction.service;
 
+import static org.app.corporateinternetbanking.transaction.utils.mapper.TransactionMap.mapRequest;
+import static org.app.corporateinternetbanking.transaction.utils.mapper.TransactionMap.mapResponse;
+
 import jakarta.transaction.Transactional;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.app.corporateinternetbanking.account.domain.entity.Account;
@@ -30,14 +37,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-
-import static org.app.corporateinternetbanking.transaction.utils.mapper.TransactionMap.mapRequest;
-import static org.app.corporateinternetbanking.transaction.utils.mapper.TransactionMap.mapResponse;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -45,33 +44,42 @@ public class TransactionServiceImpl implements TransactionService {
     private final PayoutRecipientRepository payoutRecipientRepository;
     private final UserServiceImpl userService;
     private final OrganizationRepository organizationRepository;
+
     @Autowired
     AccountRepository accountRepository;
+
     @Autowired
     TransactionRepository transactionRepository;
 
     @Override
-    public TransactionResponse initiateTransaction(TransferRequest request) throws InvalidAmount, AccountDoesNotExist, UserNotFound, UnauthorizedAccess, DuplicateTransaction, InsufficientBalance, InvalidAccount, IsNull {
-        Transaction savedTransaction = switch (request.getType()) {
-            case INTERNAL_TRANSFER -> validateInternalTransaction(request);
+    public TransactionResponse initiateTransaction(TransferRequest request)
+            throws InvalidAmount, AccountDoesNotExist, UserNotFound, UnauthorizedAccess, DuplicateTransaction,
+                    InsufficientBalance, InvalidAccount, IsNull {
+        Transaction savedTransaction =
+                switch (request.getType()) {
+                    case INTERNAL_TRANSFER -> validateInternalTransaction(request);
 
-            case EXTERNAL_FUNDING -> validateFunding(request);
+                    case EXTERNAL_FUNDING -> validateFunding(request);
 
-            case EXTERNAL_PAYOUT -> validatePayout(request);
+                    case EXTERNAL_PAYOUT -> validatePayout(request);
 
-            case EXTERNAL_DEPOSIT ->
-                    throw new IllegalArgumentException("External Deposit cannot be initiated manually.They are processed automatically by the system.");
-        };
+                    case EXTERNAL_DEPOSIT -> throw new IllegalArgumentException(
+                            "External Deposit cannot be initiated manually.They are processed automatically by the system.");
+                };
         return mapResponse(savedTransaction);
     }
 
     private Account validateAccountNumber(String accountNumber) throws AccountDoesNotExist {
-        Account account = accountRepository.findByAccountNumber(accountNumber).orElseThrow(() -> new AccountDoesNotExist("Account number does not exist"));
+        Account account = accountRepository
+                .findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new AccountDoesNotExist("Account number does not exist"));
 
         return account;
     }
 
-    private Transaction validateInternalTransaction(TransferRequest request) throws InvalidAccount, IsNull, AccountDoesNotExist, UserNotFound, InvalidAmount, UnauthorizedAccess, DuplicateTransaction, InsufficientBalance {
+    private Transaction validateInternalTransaction(TransferRequest request)
+            throws InvalidAccount, IsNull, AccountDoesNotExist, UserNotFound, InvalidAmount, UnauthorizedAccess,
+                    DuplicateTransaction, InsufficientBalance {
         Transaction transaction = validateTransaction(request);
 
         Account source = validateAccountNumber(request.getSourceAccount());
@@ -86,20 +94,21 @@ public class TransactionServiceImpl implements TransactionService {
         transaction.setDestinationAccount(destination);
         transaction.setStatus(TransactionStatus.PENDING_APPROVAL);
         return transactionRepository.save(transaction);
-
     }
 
-    private Transaction validateFunding(TransferRequest request) throws IsNull, AccountDoesNotExist, UserNotFound, InvalidAmount, UnauthorizedAccess, DuplicateTransaction {
+    private Transaction validateFunding(TransferRequest request)
+            throws IsNull, AccountDoesNotExist, UserNotFound, InvalidAmount, UnauthorizedAccess, DuplicateTransaction {
         Transaction transaction = validateTransaction(request);
 
         Account destination = validateAccountNumber(request.getDestinationAccount());
         transaction.setDestinationAccount(destination);
         transaction.setStatus(TransactionStatus.PENDING);
         return transactionRepository.save(transaction);
-
     }
 
-    private Transaction validatePayout(TransferRequest request) throws IsNull, AccountDoesNotExist, UserNotFound, InvalidAmount, UnauthorizedAccess, DuplicateTransaction, InsufficientBalance {
+    private Transaction validatePayout(TransferRequest request)
+            throws IsNull, AccountDoesNotExist, UserNotFound, InvalidAmount, UnauthorizedAccess, DuplicateTransaction,
+                    InsufficientBalance {
         Transaction transaction = validateTransaction(request);
 
         Account source = validateAccountNumber(request.getSourceAccount());
@@ -107,12 +116,11 @@ public class TransactionServiceImpl implements TransactionService {
         transaction.setStatus(TransactionStatus.PENDING_APPROVAL);
         reserveFunds(source, request.getAmount());
 
-        PayoutRecipient recipient = payoutRecipientRepository.findById(request.getPayoutRecipientId())
+        PayoutRecipient recipient = payoutRecipientRepository
+                .findById(request.getPayoutRecipientId())
                 .orElseThrow(() -> new IsNull("Recipient not found"));
         transaction.setPayoutRecipient(recipient);
         return transactionRepository.save(transaction);
-
-
     }
 
     // Moves funds from available to reserved; they leave totalBalance only once the transaction settles.
@@ -124,14 +132,16 @@ public class TransactionServiceImpl implements TransactionService {
         source.setReservedBalance(source.getReservedBalance().add(amount));
     }
 
-    private Transaction validateTransaction(TransferRequest request) throws DuplicateTransaction, InvalidAmount, UserNotFound, UnauthorizedAccess, IsNull {
+    private Transaction validateTransaction(TransferRequest request)
+            throws DuplicateTransaction, InvalidAmount, UserNotFound, UnauthorizedAccess, IsNull {
         if (request.getIdempotencyKey() == null || request.getIdempotencyKey().isBlank()) {
             throw new IsNull("idempotencyKey is required");
         }
         if (request.getAmount() == null) {
             throw new IsNull("amount is required");
         }
-        Optional<Transaction> existingTransaction = transactionRepository.findByIdempotencyKey(request.getIdempotencyKey());
+        Optional<Transaction> existingTransaction =
+                transactionRepository.findByIdempotencyKey(request.getIdempotencyKey());
 
         if (existingTransaction.isPresent()) {
             throw new DuplicateTransaction("Duplicate transaction detected");
@@ -153,18 +163,15 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     public Transaction findByTransactionReference(String transactionReference) throws TransactionDoesNotExist {
-        return transactionRepository.findByReference(transactionReference)
+        return transactionRepository
+                .findByReference(transactionReference)
                 .orElseThrow(() -> new TransactionDoesNotExist("Transaction not found"));
     }
 
     @Override
     public List<TransactionResponse> viewPendingTransactions() {
-        List<Transaction> transactions =
-                transactionRepository.findByStatus(TransactionStatus.PENDING_APPROVAL);
-        return transactions
-                .stream()
-                .map(TransactionMap::mapResponse)
-                .toList();
+        List<Transaction> transactions = transactionRepository.findByStatus(TransactionStatus.PENDING_APPROVAL);
+        return transactions.stream().map(TransactionMap::mapResponse).toList();
     }
 
     @Override
@@ -173,14 +180,12 @@ public class TransactionServiceImpl implements TransactionService {
         if (status != null && !status.isBlank()) {
             try {
                 TransactionStatus txnStatus = TransactionStatus.valueOf(status.toUpperCase());
-                return transactionRepository.findByStatus(txnStatus, pageable)
-                        .map(TransactionMap::mapResponse);
+                return transactionRepository.findByStatus(txnStatus, pageable).map(TransactionMap::mapResponse);
             } catch (IllegalArgumentException e) {
 
             }
         }
-        return transactionRepository.findAll(pageable)
-                .map(TransactionMap::mapResponse);
+        return transactionRepository.findAll(pageable).map(TransactionMap::mapResponse);
     }
 
     @Transactional
@@ -188,14 +193,14 @@ public class TransactionServiceImpl implements TransactionService {
     public void expirePendingTransactions() {
         log.info("Processing pending orders");
         LocalDateTime expirationTime = LocalDateTime.now().minusHours(24);
-        List<Transaction> expiredTransactions = transactionRepository.findByStatusAndCreatedAtBefore(TransactionStatus.PENDING, expirationTime);
+        List<Transaction> expiredTransactions =
+                transactionRepository.findByStatusAndCreatedAtBefore(TransactionStatus.PENDING, expirationTime);
 
         for (Transaction transaction : expiredTransactions) {
             transaction.setStatus(TransactionStatus.EXPIRED);
             transaction.setProcessedAt(LocalDateTime.now());
             log.info("Automatically expired due to time-out");
         }
-
     }
 
     @Override
@@ -203,7 +208,8 @@ public class TransactionServiceImpl implements TransactionService {
         log.info("Calculating 24 hours window transaction volume");
         LocalDateTime end = LocalDateTime.now().minusHours(24);
         LocalDateTime start = LocalDateTime.now();
-        List<Transaction> expiredTransactions = transactionRepository.findByCreatedAtBetweenAndStatus(start, end, TransactionStatus.SUCCESS);
+        List<Transaction> expiredTransactions =
+                transactionRepository.findByCreatedAtBetweenAndStatus(start, end, TransactionStatus.SUCCESS);
         BigDecimal transactionVolume = BigDecimal.ZERO;
         for (Transaction transaction : expiredTransactions) {
             transactionVolume = transactionVolume.add(transaction.getAmount());
@@ -227,18 +233,16 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public Page<TransactionResponse> getTransactionsByOrganization(
-            Long orgId, int page, int size) throws OrganizationDoesNotExist {
-        Organization org = organizationRepository.findById(orgId)
+    public Page<TransactionResponse> getTransactionsByOrganization(Long orgId, int page, int size)
+            throws OrganizationDoesNotExist {
+        Organization org = organizationRepository
+                .findById(orgId)
                 .orElseThrow(() -> new OrganizationDoesNotExist("Organization not found"));
 
         Pageable pageable = PageRequest.of(page, size);
         // You'll need to add this query to your TransactionRepository
-        Page<Transaction> transactions = transactionRepository
-                .findAllBySourceAccount_Organization(org, pageable);
+        Page<Transaction> transactions = transactionRepository.findAllBySourceAccount_Organization(org, pageable);
 
         return transactions.map(TransactionMap::mapResponse);
     }
-
-
 }

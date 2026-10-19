@@ -1,8 +1,8 @@
 package org.app.corporateinternetbanking.currency.utils;
 
+import org.app.corporateinternetbanking.currency.domain.entity.Currency;
 import org.app.corporateinternetbanking.currency.dto.CurrencyRequest;
 import org.app.corporateinternetbanking.currency.dto.CurrencyResponse;
-import org.app.corporateinternetbanking.currency.domain.entity.Currency;
 
 public class CurrencyMap {
 

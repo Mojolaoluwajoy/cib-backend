@@ -4,11 +4,6 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import org.app.corporateinternetbanking.user.domain.entity.User;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-
-import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -16,11 +11,13 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import javax.crypto.SecretKey;
+import org.app.corporateinternetbanking.user.domain.entity.User;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
 @Service
-
 public class JwtService {
-
 
     @Value("${application.security.jwt.secret-key}")
     private String secretKey;
@@ -51,7 +48,6 @@ public class JwtService {
 
     private boolean isTokenExpired(String token) {
         return isTokenExpired(extractAllClaims(token));
-
     }
 
     private SecretKey getSecretKey() {
@@ -70,14 +66,13 @@ public class JwtService {
         claims.put("id", user.getId());
         claims.put("username", user.getEmail());
         claims.put("role", user.getRole());
-        return Jwts.builder().claims(claims)
+        return Jwts.builder()
+                .claims(claims)
                 .subject(user.getEmail())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
                 .signWith(getSecretKey())
                 .compact();
-
-
     }
 
     public String generateInvitationToken(String email) {
@@ -130,7 +125,9 @@ public class JwtService {
         } catch (JwtException | IllegalArgumentException e) {
             return null;
         }
-        if (!type.equals(claims.get("type")) || !email.equalsIgnoreCase(claims.getSubject()) || isTokenExpired(claims)) {
+        if (!type.equals(claims.get("type"))
+                || !email.equalsIgnoreCase(claims.getSubject())
+                || isTokenExpired(claims)) {
             return null;
         }
         return claims;

@@ -1,5 +1,6 @@
 package org.app.corporateinternetbanking.transaction.utils.mapper;
 
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.app.corporateinternetbanking.transaction.domain.entity.PayoutRecipient;
 import org.app.corporateinternetbanking.transaction.dto.PayoutRequest;
@@ -8,8 +9,6 @@ import org.app.corporateinternetbanking.transaction.enums.TransactionType;
 import org.app.corporateinternetbanking.user.exceptions.UserNotFound;
 import org.app.corporateinternetbanking.user.service.UserServiceImpl;
 import org.springframework.stereotype.Component;
-
-import java.time.LocalDateTime;
 
 @Component
 @RequiredArgsConstructor
@@ -35,6 +34,5 @@ public class PayoutMap {
         transferRequest.setType(TransactionType.EXTERNAL_PAYOUT);
         transferRequest.setIdempotencyKey(payoutRequest.getIdempotencyKey());
         return transferRequest;
-
     }
 }

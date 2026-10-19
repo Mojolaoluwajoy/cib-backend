@@ -1,5 +1,7 @@
 package org.app.corporateinternetbanking.audit;
 
+import java.math.BigDecimal;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.app.corporateinternetbanking.account.domain.entity.Account;
@@ -7,9 +9,6 @@ import org.app.corporateinternetbanking.account.domain.repository.AccountReposit
 import org.app.corporateinternetbanking.ledger.domain.entity.LedgerEntry;
 import org.app.corporateinternetbanking.ledger.domain.repository.LedgerRepository;
 import org.springframework.stereotype.Service;
-
-import java.math.BigDecimal;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -24,21 +23,22 @@ public class AuditService {
 
         for (Account account : accounts) {
 
-
             LedgerEntry lastLedger = ledgerRepository.findByAccountIdOrderByCreatedAtDesc(account.getId());
             if (lastLedger == null) continue;
 
             BigDecimal storedBalance = account.getTotalBalance();
             BigDecimal computedBalance = lastLedger.getBalanceAfter();
 
-
             if (storedBalance.compareTo(computedBalance) != 0) {
                 account.setFlagged(true);
-                log.info("MISMATCH DETECTED FOR ACCOUNT: {},STORED BALANCE: {},COMPUTED BALANCE: {}", account.getId(), storedBalance, computedBalance);
+                log.info(
+                        "MISMATCH DETECTED FOR ACCOUNT: {},STORED BALANCE: {},COMPUTED BALANCE: {}",
+                        account.getId(),
+                        storedBalance,
+                        computedBalance);
             } else {
                 account.setFlagged(false);
             }
         }
-
     }
 }

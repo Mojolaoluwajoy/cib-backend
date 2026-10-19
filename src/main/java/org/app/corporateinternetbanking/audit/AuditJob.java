@@ -12,9 +12,8 @@ public class AuditJob {
     private final AuditService auditService;
 
     @Scheduled(cron = "0 0 0 * * *")
-    public void runAudit(){
+    public void runAudit() {
         log.info("Running balance auditing");
         auditService.auditBalances();
-
     }
 }

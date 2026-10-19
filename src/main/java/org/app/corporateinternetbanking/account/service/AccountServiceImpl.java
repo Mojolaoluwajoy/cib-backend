@@ -1,5 +1,13 @@
 package org.app.corporateinternetbanking.account.service;
 
+import static org.app.corporateinternetbanking.account.utils.mapper.Map.requestMap;
+import static org.app.corporateinternetbanking.account.utils.mapper.Map.responseMap;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.app.corporateinternetbanking.account.domain.entity.Account;
 import org.app.corporateinternetbanking.account.domain.repository.AccountRepository;
@@ -23,39 +31,35 @@ import org.app.corporateinternetbanking.user.exceptions.UserNotFound;
 import org.app.corporateinternetbanking.user.service.UserServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import static org.app.corporateinternetbanking.account.utils.mapper.Map.requestMap;
-import static org.app.corporateinternetbanking.account.utils.mapper.Map.responseMap;
-
 @org.springframework.stereotype.Service
 @AllArgsConstructor
 public class AccountServiceImpl implements AccountService {
     private final UserServiceImpl userService;
+
     @Autowired
     AccountRepository repository;
+
     @Autowired
     OrganizationRepository organizationRepository;
+
     @Autowired
     CurrencyRepository currencyRepository;
+
     @Autowired
     private EmailSenderService senderService;
 
     @Override
-    public AccountResponse createAccount(AccountRequest request) throws OrganizationDoesNotExist, UserNotFound, CurrencyNotFound, CurrencyNotActive {
+    public AccountResponse createAccount(AccountRequest request)
+            throws OrganizationDoesNotExist, UserNotFound, CurrencyNotFound, CurrencyNotActive {
         Account account = requestMap(request);
         User creator = userService.getCurrentUser();
         Organization organization = creator.getOrganization();
-        Currency currency = currencyRepository.findByCode(request.getCurrencyCode())
+        Currency currency = currencyRepository
+                .findByCode(request.getCurrencyCode())
                 .orElseThrow(() -> new CurrencyNotFound("This currency does not exist"));
         account.setCurrency(currency);
         if (currency.getStatus().equals(CurrencyStatus.INACTIVE)) {
             throw new CurrencyNotActive("This currency is not available for use right now");
-
         }
         account.setOrganization(organization);
         account.setCreatedBy(creator);
@@ -68,12 +72,14 @@ public class AccountServiceImpl implements AccountService {
     public AccountResponse createAccountForOrg(Long orgId, AccountRequest request)
             throws OrganizationDoesNotExist, UserNotFound, CurrencyNotFound, CurrencyNotActive {
 
-        Organization organization = organizationRepository.findById(orgId)
+        Organization organization = organizationRepository
+                .findById(orgId)
                 .orElseThrow(() -> new OrganizationDoesNotExist("Organization not found"));
 
         User creator = userService.getCurrentUser();
 
-        Currency currency = currencyRepository.findByCode(request.getCurrencyCode())
+        Currency currency = currencyRepository
+                .findByCode(request.getCurrencyCode())
                 .orElseThrow(() -> new CurrencyNotFound("This currency does not exist"));
 
         if (currency.getStatus().equals(CurrencyStatus.INACTIVE)) {
@@ -105,12 +111,12 @@ public class AccountServiceImpl implements AccountService {
             throw new AccountDoesNotExist("There's no account with the id entered");
         }
         return responseMap(account.get());
-
     }
 
     @Override
     public void credit(Long accountId, BigDecimal amount) throws AccountDoesNotExist {
-        Account account = repository.findById(accountId).orElseThrow(() -> new AccountDoesNotExist("Account not found"));
+        Account account =
+                repository.findById(accountId).orElseThrow(() -> new AccountDoesNotExist("Account not found"));
 
         account.setAvailableBalance(account.getAvailableBalance().add(amount));
         account.setTotalBalance(account.getTotalBalance().add(amount));
@@ -119,7 +125,8 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public void debit(Long accountId, BigDecimal amount) throws AccountDoesNotExist, InsufficientBalance {
-        Account account = repository.findById(accountId).orElseThrow(() -> new AccountDoesNotExist("Account not found"));
+        Account account =
+                repository.findById(accountId).orElseThrow(() -> new AccountDoesNotExist("Account not found"));
 
         if (account.getTotalBalance().compareTo(amount) < 0) {
             throw new InsufficientBalance("Insufficient funds");
@@ -134,11 +141,14 @@ public class AccountServiceImpl implements AccountService {
         if (accountNumber == null || accountNumber.isBlank()) {
             throw new IsNull("Account number is required");
         }
-        return repository.findByAccountNumber(accountNumber).orElseThrow(() -> new AccountDoesNotExist("Account not found"));
+        return repository
+                .findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new AccountDoesNotExist("Account not found"));
     }
 
     public List<AccountResponse> getAccountsByOrganization(Long orgId) throws OrganizationDoesNotExist {
-        Organization org = organizationRepository.findById(orgId)
+        Organization org = organizationRepository
+                .findById(orgId)
                 .orElseThrow(() -> new OrganizationDoesNotExist("Organization not found"));
 
         List<Account> accounts = repository.findAllByOrganization(org);

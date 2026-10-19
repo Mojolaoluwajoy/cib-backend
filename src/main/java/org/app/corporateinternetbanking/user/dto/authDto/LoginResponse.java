@@ -16,7 +16,6 @@ public class LoginResponse {
     private String firstName;
     private String lastName;
 
-
     public LoginResponse(User user, String token) {
         this.token = token;
         this.firstName = user.getFirstName();
@@ -24,5 +23,4 @@ public class LoginResponse {
         this.email = user.getEmail();
         this.role = user.getRole();
     }
-
 }
