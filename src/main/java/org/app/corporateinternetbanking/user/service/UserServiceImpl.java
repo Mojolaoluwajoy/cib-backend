@@ -49,13 +49,18 @@ public class UserServiceImpl implements UserService {
         User admin = getCurrentUser();
         org.app.corporateinternetbanking.organization.domain.entity.Organization organization = admin.getOrganization();
 
-        // Invited users join the inviter's organization, so the inviter must have one, and the
-        // platform-level SUPER_ADMIN role can never be handed out through an invitation.
-        if (organization == null) {
-            throw new UnauthorizedAccess("Only an organization admin can invite users into their organization");
+        if (invitationRequest.getRole() == null) {
+            throw new UnauthorizedAccess("A role is required");
         }
-        if (invitationRequest.getRole() == null || invitationRequest.getRole() == UserRole.SUPER_ADMIN) {
-            throw new UnauthorizedAccess("Invited users must be ADMIN, MAKER or APPROVER");
+        if (invitationRequest.getRole() == UserRole.SUPER_ADMIN) {
+            // Platform-level role: only an existing super admin can grant it, and it belongs to no organization.
+            if (!TenantAccess.isSuperAdmin(admin)) {
+                throw new UnauthorizedAccess("Only a super admin can invite another super admin");
+            }
+            organization = null;
+        } else if (organization == null) {
+            // Everyone else joins the inviter's organization, so the inviter must have one.
+            throw new UnauthorizedAccess("Only an organization admin can invite users into their organization");
         }
 
         if (repository.existsByEmail(invitationRequest.getUserEmail())) {
