@@ -25,7 +25,8 @@ public class Account {
     @Column(unique = true)
     private String accountNumber;
 
-    private BigDecimal totalBalance = BigDecimal.valueOf(10000);
+    // New accounts start empty; money only enters through funding or DVA deposits.
+    private BigDecimal totalBalance = BigDecimal.ZERO;
     private BigDecimal availableBalance = totalBalance;
     private BigDecimal reservedBalance = BigDecimal.ZERO;
 
@@ -56,11 +57,11 @@ public class Account {
     @PrePersist
     public void prePersist() {
         this.flagged = false;
-        if (availableBalance == null) {
-            availableBalance = getTotalBalance();
-        }
         if (totalBalance == null) {
-            totalBalance = BigDecimal.valueOf(10000);
+            totalBalance = BigDecimal.ZERO;
+        }
+        if (availableBalance == null) {
+            availableBalance = totalBalance;
         }
     }
 }
