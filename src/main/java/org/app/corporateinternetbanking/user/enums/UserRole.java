@@ -1,5 +1,8 @@
 package org.app.corporateinternetbanking.user.enums;
 
 public enum UserRole {
-    SUPER_ADMIN,ADMIN,MAKER,APPROVER
+    SUPER_ADMIN,
+    ADMIN,
+    MAKER,
+    APPROVER
 }

@@ -1,5 +1,10 @@
 package org.app.corporateinternetbanking.transaction.service;
 
+import static org.app.corporateinternetbanking.transaction.utils.mapper.PayoutMap.getPayoutRecipient;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.app.corporateinternetbanking.account.exception.AccountDoesNotExist;
@@ -19,12 +24,6 @@ import org.app.corporateinternetbanking.user.exceptions.UnauthorizedAccess;
 import org.app.corporateinternetbanking.user.exceptions.UserNotFound;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-
-import static org.app.corporateinternetbanking.transaction.utils.mapper.PayoutMap.getPayoutRecipient;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -35,20 +34,20 @@ public class RecipientService {
     private final TransactionServiceImpl transactionService;
     private final PayoutMap payoutMap;
 
-    public TransactionResponse requestPayOut(PayoutRequest payoutRequest) throws UserNotFound, InvalidAccount, InvalidAmount, InsufficientBalance, UnauthorizedAccess, IsNull, DuplicateTransaction, AccountDoesNotExist {
+    public TransactionResponse requestPayOut(PayoutRequest payoutRequest)
+            throws UserNotFound, InvalidAccount, InvalidAmount, InsufficientBalance, UnauthorizedAccess, IsNull,
+                    DuplicateTransaction, AccountDoesNotExist {
 
         PayoutRecipient recipient = createOrFetch(payoutRequest);
         TransferRequest transferRequest = payoutMap.mapToPayoutRequest(payoutRequest);
         transferRequest.setPayoutRecipientId(recipient.getId());
         return transactionService.initiateTransaction(transferRequest);
-
     }
-
 
     public PayoutRecipient createOrFetch(PayoutRequest payoutRequest) {
 
-        Optional<PayoutRecipient> existing = payoutRecipientRepository.
-                findByAccountNumberAndBankCode(payoutRequest.getAccountNumber(), payoutRequest.getBankCode());
+        Optional<PayoutRecipient> existing = payoutRecipientRepository.findByAccountNumberAndBankCode(
+                payoutRequest.getAccountNumber(), payoutRequest.getBankCode());
         if (existing.isPresent()) {
             return existing.get();
         }
@@ -69,8 +68,5 @@ public class RecipientService {
 
         PayoutRecipient payoutRecipient = getPayoutRecipient(payoutRequest, code);
         return payoutRecipientRepository.save(payoutRecipient);
-
     }
-
-
 }

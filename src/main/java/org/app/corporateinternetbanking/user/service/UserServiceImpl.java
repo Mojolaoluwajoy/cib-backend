@@ -1,10 +1,15 @@
 package org.app.corporateinternetbanking.user.service;
 
+import static org.app.corporateinternetbanking.user.utils.mapper.UserMap.mapResponse;
+
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.app.corporateinternetbanking.email.EmailSenderService;
 import org.app.corporateinternetbanking.organization.exceptions.OrganizationDoesNotExist;
 import org.app.corporateinternetbanking.security.JwtService;
+import org.app.corporateinternetbanking.security.TenantAccess;
 import org.app.corporateinternetbanking.user.domain.entity.User;
 import org.app.corporateinternetbanking.user.domain.repository.UserRepository;
 import org.app.corporateinternetbanking.user.dto.*;
@@ -22,19 +27,16 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-
-import static org.app.corporateinternetbanking.user.utils.mapper.UserMap.mapResponse;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
     private final UserRepository repository;
     private final PasswordEncoder passwordEncoder;
+
     @Autowired
     EmailSenderService senderService;
+
     @Autowired
     private JwtService jwtService;
 
@@ -42,10 +44,19 @@ public class UserServiceImpl implements UserService {
     private String frontendBaseUrl;
 
     @Override
-    public String sendInvitationTokenToUser(InvitationRequest invitationRequest) throws UserNotFound, UserAlreadyRegistered {
+    public String sendInvitationTokenToUser(InvitationRequest invitationRequest)
+            throws UserNotFound, UserAlreadyRegistered, UnauthorizedAccess {
         User admin = getCurrentUser();
-        org.app.corporateinternetbanking.organization.domain.entity.Organization organization
-                = admin.getOrganization();
+        org.app.corporateinternetbanking.organization.domain.entity.Organization organization = admin.getOrganization();
+
+        // Invited users join the inviter's organization, so the inviter must have one, and the
+        // platform-level SUPER_ADMIN role can never be handed out through an invitation.
+        if (organization == null) {
+            throw new UnauthorizedAccess("Only an organization admin can invite users into their organization");
+        }
+        if (invitationRequest.getRole() == null || invitationRequest.getRole() == UserRole.SUPER_ADMIN) {
+            throw new UnauthorizedAccess("Invited users must be ADMIN, MAKER or APPROVER");
+        }
 
         if (repository.existsByEmail(invitationRequest.getUserEmail())) {
             throw new UserAlreadyRegistered("User already exists");
@@ -55,19 +66,23 @@ public class UserServiceImpl implements UserService {
         user.setRole(invitationRequest.getRole());
         user.setOrganization(organization);
         user.setStatus(UserStatus.INACTIVE);
-        String token = jwtService.generateEmailToken(invitationRequest.getUserEmail());
+        String token = jwtService.generateInvitationToken(invitationRequest.getUserEmail());
         sendMail(invitationRequest, token);
         repository.save(user);
         return invitationRequest.getUserEmail();
     }
 
     @Override
-    public UserResponse createUserWithToken(UserRegistrationRequest request) throws UserAlreadyRegistered, OrganizationDoesNotExist, TokenExpiredOrInvalid, SuperAdminAlreadyExists, UserNotFound {
+    public UserResponse createUserWithToken(UserRegistrationRequest request)
+            throws UserAlreadyRegistered, OrganizationDoesNotExist, TokenExpiredOrInvalid, SuperAdminAlreadyExists,
+                    UserNotFound {
 
-        if (!jwtService.isEmailTokenValid(request.getToken())) {
+        // The token must be an invitation issued for this exact email, not any valid token.
+        if (!jwtService.isInvitationTokenValid(request.getToken(), request.getEmail())) {
             throw new TokenExpiredOrInvalid("Token expired or its invalid");
         }
-        User user = repository.findByEmail(request.getEmail())
+        User user = repository
+                .findByEmail(request.getEmail())
                 .orElseThrow(() -> new UserNotFound("This user has not been invited"));
 
         if (user.getStatus() == UserStatus.ACTIVE) {
@@ -88,10 +103,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<UserResponse> ViewAll() {
-        String email = SecurityContextHolder.getContext()
-                .getAuthentication().getName();
-        User currentUser = repository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = repository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
 
         List<User> users;
         if (currentUser.getRole() == UserRole.SUPER_ADMIN) {
@@ -102,24 +115,46 @@ public class UserServiceImpl implements UserService {
             users = repository.findAllByOrganization(currentUser.getOrganization());
         }
 
-        return users.stream()
-                .map(UserMap::mapResponse)
-                .collect(java.util.stream.Collectors.toList());
+        return users.stream().map(UserMap::mapResponse).collect(java.util.stream.Collectors.toList());
     }
 
     @Override
-    public Page<User> viewByStatus(int page, int size, String status) {
+    public Page<UserResponse> viewByStatus(int page, int size, String status) throws UserNotFound {
+        User currentUser = getCurrentUser();
+        boolean superAdmin = TenantAccess.isSuperAdmin(currentUser);
         Pageable pageable = PageRequest.of(page, size);
-        if (status != null) {
-            return repository.findByStatus(status, pageable);
+
+        UserStatus userStatus = null;
+        if (status != null && !status.isBlank()) {
+            try {
+                userStatus = UserStatus.valueOf(status.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                // Unknown status: return the unfiltered list.
+            }
         }
-        return repository.findAll(pageable);
+
+        Page<User> users;
+        if (superAdmin) {
+            users = userStatus == null ? repository.findAll(pageable) : repository.findByStatus(userStatus, pageable);
+        } else {
+            users = userStatus == null
+                    ? repository.findByOrganization(currentUser.getOrganization(), pageable)
+                    : repository.findByOrganizationAndStatus(currentUser.getOrganization(), userStatus, pageable);
+        }
+        // Map to the response DTO: returning the entity would expose password hashes.
+        return users.map(UserMap::mapResponse);
     }
 
     @Override
-    public PasswordResetResponse resetPassword(PasswordResetRequest passwordResetRequest) throws IncorrectPassword, InvalidEmail {
-        User user = repository.findByEmail(passwordResetRequest.getEmail())
-                .orElseThrow(() -> new InvalidEmail("Email not found"));
+    public PasswordResetResponse resetPassword(PasswordResetRequest passwordResetRequest)
+            throws IncorrectPassword, InvalidEmail {
+        // Always change the logged-in user's password; the email in the body is not trusted.
+        User user;
+        try {
+            user = getCurrentUser();
+        } catch (UserNotFound e) {
+            throw new InvalidEmail("Email not found");
+        }
         if (passwordEncoder.matches(passwordResetRequest.getOldPassword(), user.getPassword())) {
             String newPassword = passwordEncoder.encode(passwordResetRequest.getNewPassword());
             user.setPassword(newPassword);
@@ -131,28 +166,27 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public String resetForgottenPassword(ForgotPasswordRequest forgotPasswordRequest) throws InvalidEmail, TokenExpiredOrInvalid {
-        User user = repository.findByEmail(forgotPasswordRequest.getEmail())
+    public String resetForgottenPassword(ForgotPasswordRequest forgotPasswordRequest)
+            throws InvalidEmail, TokenExpiredOrInvalid {
+        User user = repository
+                .findByEmail(forgotPasswordRequest.getEmail())
                 .orElseThrow(() -> new InvalidEmail("Email not found"));
-        if (!jwtService.isEmailTokenValid(forgotPasswordRequest.getToken())) {
+        // Token must be a reset token for this user, issued before their current password was set.
+        if (!jwtService.isPasswordResetTokenValid(forgotPasswordRequest.getToken(), user)) {
             throw new TokenExpiredOrInvalid("Token expired or its invalid");
         }
         user.setPassword(passwordEncoder.encode(forgotPasswordRequest.getNewPassword()));
-        user.setPassword(forgotPasswordRequest.getNewPassword());
         repository.save(user);
         return "Password reset successful";
     }
 
-
     @Override
     public PasswordResetResponse sendForgotPasswordToken(String email) throws InvalidEmail {
-        User user = repository.findByEmail(email)
-                .orElseThrow(() -> new InvalidEmail("Email not found"));
-        String token = jwtService.generateEmailToken(email);
+        User user = repository.findByEmail(email).orElseThrow(() -> new InvalidEmail("Email not found"));
+        String token = jwtService.generatePasswordResetToken(user);
         senderService.sendEmail(user.getEmail(), "Password reset token", "Your password reset token is: \n" + token);
         return PasswordResetResponseMap.resetResponseMap(user);
     }
-
 
     public void sendMail(InvitationRequest invitationRequest, String token) {
         String encodedToken;
@@ -162,32 +196,22 @@ public class UserServiceImpl implements UserService {
             encodedToken = token;
         }
 
-        String registrationLink = frontendBaseUrl
-                + "/complete-registration?token="
-                + encodedToken;
+        String registrationLink = frontendBaseUrl + "/complete-registration?token=" + encodedToken;
 
-        String emailBody =
-                "Hello,\n\n"
-                        + "You have been invited to join CIB Platform.\n\n"
-                        + "Click the link below to complete your registration:\n\n"
-                        + registrationLink + "\n\n"
-                        + "Simply click the link and fill in your personal details to activate your account.\n\n"
-                        + "If you did not expect this invitation, please ignore this email.\n\n"
-                        + "— CIB Platform Team";
+        String emailBody = "Hello,\n\n"
+                + "You have been invited to join CIB Platform.\n\n"
+                + "Click the link below to complete your registration:\n\n"
+                + registrationLink + "\n\n"
+                + "Simply click the link and fill in your personal details to activate your account.\n\n"
+                + "If you did not expect this invitation, please ignore this email.\n\n"
+                + "— CIB Platform Team";
 
-        senderService.sendEmail(
-                invitationRequest.getUserEmail(),
-                "You have been invited to CIB Platform",
-                emailBody
-        );
+        senderService.sendEmail(invitationRequest.getUserEmail(), "You have been invited to CIB Platform", emailBody);
     }
 
     public User getCurrentUser() throws UserNotFound {
-        String email = SecurityContextHolder.getContext()
-                .getAuthentication()
-                .getName();
-        return repository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFound("User not found"));
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return repository.findByEmail(email).orElseThrow(() -> new UserNotFound("User not found"));
     }
 
     @Override
@@ -208,18 +232,19 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserResponse updateUserProfile(Long userId, UpdateProfileRequest request) throws UserNotFound, UnauthorizedAccess, UserAlreadyRegistered {
+    public UserResponse updateUserProfile(Long userId, UpdateProfileRequest request)
+            throws UserNotFound, UnauthorizedAccess, UserAlreadyRegistered {
 
         User admin = getCurrentUser();
-
-        User targetUser = repository.findById(userId)
-                .orElseThrow(() -> new UserNotFound("User not found"));
-
-        if (!targetUser.getOrganization().getId()
-                .equals(admin.getOrganization().getId())) {
-            throw new UnauthorizedAccess("This user is not in your organization");
+        if (admin.getRole() != UserRole.ADMIN && !TenantAccess.isSuperAdmin(admin)) {
+            throw new UnauthorizedAccess("Only an admin can update other users' profiles");
         }
 
+        User targetUser = repository.findById(userId).orElseThrow(() -> new UserNotFound("User not found"));
+
+        if (!TenantAccess.canAccess(admin, targetUser.getOrganization())) {
+            throw new UnauthorizedAccess("This user is not in your organization");
+        }
 
         if (request.getFirstName() != null) targetUser.setFirstName(request.getFirstName());
         if (request.getLastName() != null) targetUser.setLastName(request.getLastName());

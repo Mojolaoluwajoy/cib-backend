@@ -13,5 +13,4 @@ public class CorporateInternetBankingApplication {
     public static void main(String[] args) {
         SpringApplication.run(CorporateInternetBankingApplication.class, args);
     }
-
 }

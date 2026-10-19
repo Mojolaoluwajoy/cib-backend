@@ -17,5 +17,4 @@ public class UserResponse {
     private OrganizationId organizationId;
     private UserRole role;
     private UserStatus status;
-
 }

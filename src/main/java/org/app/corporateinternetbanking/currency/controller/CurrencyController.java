@@ -2,6 +2,7 @@ package org.app.corporateinternetbanking.currency.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
 import org.app.corporateinternetbanking.commons.response.GenericResponse;
 import org.app.corporateinternetbanking.currency.dto.CurrencyRequest;
 import org.app.corporateinternetbanking.currency.dto.CurrencyResponse;
@@ -13,12 +14,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/currencies")
 @Tag(name = "Currency API", description = "Handles currencies")
-
 public class CurrencyController {
     @Autowired
     CurrencyService currencyService;
@@ -34,16 +32,13 @@ public class CurrencyController {
     @Operation(summary = "View all currencies")
     public ResponseEntity<GenericResponse> viewAll() {
         List<CurrencyResponse> response = currencyService.viewAll();
-        return new ResponseEntity<>(
-                GenericResponse.success(response, "Currencies found"), HttpStatus.OK);
+        return new ResponseEntity<>(GenericResponse.success(response, "Currencies found"), HttpStatus.OK);
     }
 
     @GetMapping("/status/{status}")
     @Operation(summary = "View currencies by status")
-    public ResponseEntity<GenericResponse> viewByStatus(
-            @PathVariable CurrencyStatus status) {
+    public ResponseEntity<GenericResponse> viewByStatus(@PathVariable CurrencyStatus status) {
         List<CurrencyResponse> response = currencyService.viewByStatus(status);
-        return new ResponseEntity<>(
-                GenericResponse.success(response, "Currencies found"), HttpStatus.OK);
+        return new ResponseEntity<>(GenericResponse.success(response, "Currencies found"), HttpStatus.OK);
     }
 }

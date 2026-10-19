@@ -1,5 +1,8 @@
 package org.app.corporateinternetbanking.user.service;
 
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.app.corporateinternetbanking.account.domain.entity.Account;
 import org.app.corporateinternetbanking.account.domain.repository.AccountRepository;
@@ -15,10 +18,6 @@ import org.app.corporateinternetbanking.user.dto.DashboardStats;
 import org.app.corporateinternetbanking.user.enums.UserRole;
 import org.app.corporateinternetbanking.user.exceptions.UserNotFound;
 import org.springframework.stereotype.Service;
-
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -38,13 +37,17 @@ public class DashboardService {
             List<Organization> allOrgs = organizationRepository.findAll();
 
             int pending = (int) allOrgs.stream()
-                    .filter(o -> o.getOrganizationStatus() == OrganizationStatus.PENDING).count();
+                    .filter(o -> o.getOrganizationStatus() == OrganizationStatus.PENDING)
+                    .count();
             int approved = (int) allOrgs.stream()
-                    .filter(o -> o.getOrganizationStatus() == OrganizationStatus.APPROVED).count();
+                    .filter(o -> o.getOrganizationStatus() == OrganizationStatus.APPROVED)
+                    .count();
             int rejected = (int) allOrgs.stream()
-                    .filter(o -> o.getOrganizationStatus() == OrganizationStatus.REJECTED).count();
+                    .filter(o -> o.getOrganizationStatus() == OrganizationStatus.REJECTED)
+                    .count();
             int disabled = (int) allOrgs.stream()
-                    .filter(o -> o.getOrganizationStatus() == OrganizationStatus.DISABLED).count();
+                    .filter(o -> o.getOrganizationStatus() == OrganizationStatus.DISABLED)
+                    .count();
 
             return DashboardStats.builder()
                     .totalOrganizations(allOrgs.size())
@@ -59,10 +62,10 @@ public class DashboardService {
 
         List<Account> accounts = accountRepository.findAllByOrganization(org);
 
-        List<Transaction> pendingTxns = transactionRepository
-                .findAllByStatus(TransactionStatus.PENDING);
+        List<Transaction> pendingTxns =
+                transactionRepository.findAllForOrganizationByStatus(org, TransactionStatus.PENDING);
 
-        List<Transaction> allTxns = transactionRepository.findAll();
+        List<Transaction> allTxns = transactionRepository.findAllForOrganization(org);
 
         BigDecimal transferVolume = allTxns.stream()
                 .filter(t -> t.getType() == TransactionType.INTERNAL_TRANSFER)

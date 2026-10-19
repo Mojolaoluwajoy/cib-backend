@@ -12,5 +12,4 @@ public class UserRegistrationRequest {
     private String password;
     private String nin;
     private String token;
-
 }

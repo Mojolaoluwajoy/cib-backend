@@ -1,5 +1,6 @@
 package org.app.corporateinternetbanking.commons.exception.handler;
 
+import feign.FeignException;
 import lombok.extern.slf4j.Slf4j;
 import org.app.corporateinternetbanking.account.exception.AccountDoesNotExist;
 import org.app.corporateinternetbanking.account.exception.InvalidAccount;
@@ -21,7 +22,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-
     @ExceptionHandler(UserAlreadyRegistered.class)
     public ResponseEntity<GenericResponse> handleUserAlreadyRegistered(UserAlreadyRegistered registered) {
         log.error("Error registering user: {}", registered.getMessage());
@@ -30,8 +30,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(UnauthorizedAccess.class)
     public ResponseEntity<GenericResponse> handleNotAnAdminException(UnauthorizedAccess exception) {
-        log.error("Not a super admin: {}", exception.getMessage());
-        return new ResponseEntity<>(GenericResponse.failed(exception.getMessage()), HttpStatus.BAD_REQUEST);
+        log.error("Unauthorized access: {}", exception.getMessage());
+        return new ResponseEntity<>(GenericResponse.failed(exception.getMessage()), HttpStatus.FORBIDDEN);
     }
 
     @ExceptionHandler(AccountDoesNotExist.class)
@@ -178,5 +178,14 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(GenericResponse.failed(exception.getMessage()), HttpStatus.BAD_REQUEST);
     }
 
-
+    @ExceptionHandler(FeignException.class)
+    public ResponseEntity<GenericResponse> handleFeignException(FeignException exception) {
+        log.error(
+                "External provider error ({} {}): {}",
+                exception.status(),
+                exception.request() != null ? exception.request().url() : "",
+                exception.contentUTF8());
+        return new ResponseEntity<>(
+                GenericResponse.failed("Payment provider error: " + exception.contentUTF8()), HttpStatus.BAD_GATEWAY);
+    }
 }

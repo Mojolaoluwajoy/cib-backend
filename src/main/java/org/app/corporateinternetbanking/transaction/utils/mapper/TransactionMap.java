@@ -1,12 +1,11 @@
 package org.app.corporateinternetbanking.transaction.utils.mapper;
 
+import java.util.UUID;
 import org.app.corporateinternetbanking.account.dto.AccountNumberDto;
 import org.app.corporateinternetbanking.transaction.domain.entity.Transaction;
 import org.app.corporateinternetbanking.transaction.dto.TransactionResponse;
 import org.app.corporateinternetbanking.transaction.dto.TransferRequest;
 import org.app.corporateinternetbanking.user.dto.UserIdDto;
-
-import java.util.UUID;
 
 public class TransactionMap {
 
@@ -24,15 +23,17 @@ public class TransactionMap {
         TransactionResponse response = new TransactionResponse();
         response.setId(transaction.getId());
         if (transaction.getSourceAccount() != null) {
-            response.setSourceAccount(new AccountNumberDto(transaction.getSourceAccount().getAccountNumber()));
+            response.setSourceAccount(
+                    new AccountNumberDto(transaction.getSourceAccount().getAccountNumber()));
         }
         if (transaction.getDestinationAccount() != null) {
-            response.setDestinationAccount(new AccountNumberDto(transaction.getDestinationAccount().getAccountNumber()));
+            response.setDestinationAccount(
+                    new AccountNumberDto(transaction.getDestinationAccount().getAccountNumber()));
         }
         response.setAmount(transaction.getAmount());
         response.setType(transaction.getType());
         response.setStatus(transaction.getStatus());
-        response.setTransactionReference(transaction.getIdempotencyKey());
+        response.setTransactionReference(transaction.getReference());
         response.setCreator(new UserIdDto(transaction.getCreatedBy().getId()));
         return response;
     }

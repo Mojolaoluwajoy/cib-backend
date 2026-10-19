@@ -1,5 +1,13 @@
 package org.app.corporateinternetbanking.account.service;
 
+import static org.app.corporateinternetbanking.account.utils.mapper.Map.requestMap;
+import static org.app.corporateinternetbanking.account.utils.mapper.Map.responseMap;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.app.corporateinternetbanking.account.domain.entity.Account;
 import org.app.corporateinternetbanking.account.domain.repository.AccountRepository;
@@ -16,46 +24,47 @@ import org.app.corporateinternetbanking.email.EmailSenderService;
 import org.app.corporateinternetbanking.organization.domain.entity.Organization;
 import org.app.corporateinternetbanking.organization.domain.repository.OrganizationRepository;
 import org.app.corporateinternetbanking.organization.exceptions.OrganizationDoesNotExist;
+import org.app.corporateinternetbanking.security.TenantAccess;
 import org.app.corporateinternetbanking.transaction.exceptions.InsufficientBalance;
 import org.app.corporateinternetbanking.transaction.exceptions.IsNull;
 import org.app.corporateinternetbanking.user.domain.entity.User;
+import org.app.corporateinternetbanking.user.exceptions.UnauthorizedAccess;
 import org.app.corporateinternetbanking.user.exceptions.UserNotFound;
 import org.app.corporateinternetbanking.user.service.UserServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import static org.app.corporateinternetbanking.account.utils.mapper.Map.requestMap;
-import static org.app.corporateinternetbanking.account.utils.mapper.Map.responseMap;
 
 @org.springframework.stereotype.Service
 @AllArgsConstructor
 public class AccountServiceImpl implements AccountService {
     private final UserServiceImpl userService;
+
     @Autowired
     AccountRepository repository;
+
     @Autowired
     OrganizationRepository organizationRepository;
+
     @Autowired
     CurrencyRepository currencyRepository;
+
     @Autowired
     private EmailSenderService senderService;
 
     @Override
-    public AccountResponse createAccount(AccountRequest request) throws OrganizationDoesNotExist, UserNotFound, CurrencyNotFound, CurrencyNotActive {
+    public AccountResponse createAccount(AccountRequest request)
+            throws OrganizationDoesNotExist, UserNotFound, CurrencyNotFound, CurrencyNotActive {
         Account account = requestMap(request);
         User creator = userService.getCurrentUser();
         Organization organization = creator.getOrganization();
-        Currency currency = currencyRepository.findByCode(request.getCurrencyCode())
+        if (organization == null) {
+            throw new OrganizationDoesNotExist("You do not belong to an organization; use /accounts/create/{orgId}");
+        }
+        Currency currency = currencyRepository
+                .findByCode(request.getCurrencyCode())
                 .orElseThrow(() -> new CurrencyNotFound("This currency does not exist"));
         account.setCurrency(currency);
         if (currency.getStatus().equals(CurrencyStatus.INACTIVE)) {
             throw new CurrencyNotActive("This currency is not available for use right now");
-
         }
         account.setOrganization(organization);
         account.setCreatedBy(creator);
@@ -68,12 +77,14 @@ public class AccountServiceImpl implements AccountService {
     public AccountResponse createAccountForOrg(Long orgId, AccountRequest request)
             throws OrganizationDoesNotExist, UserNotFound, CurrencyNotFound, CurrencyNotActive {
 
-        Organization organization = organizationRepository.findById(orgId)
+        Organization organization = organizationRepository
+                .findById(orgId)
                 .orElseThrow(() -> new OrganizationDoesNotExist("Organization not found"));
 
         User creator = userService.getCurrentUser();
 
-        Currency currency = currencyRepository.findByCode(request.getCurrencyCode())
+        Currency currency = currencyRepository
+                .findByCode(request.getCurrencyCode())
                 .orElseThrow(() -> new CurrencyNotFound("This currency does not exist"));
 
         if (currency.getStatus().equals(CurrencyStatus.INACTIVE)) {
@@ -89,8 +100,11 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public List<AccountResponse> viewAll() {
-        List<Account> accounts = repository.findAll();
+    public List<AccountResponse> viewAll() throws UserNotFound {
+        User currentUser = userService.getCurrentUser();
+        List<Account> accounts = TenantAccess.isSuperAdmin(currentUser)
+                ? repository.findAll()
+                : repository.findAllByOrganization(currentUser.getOrganization());
         List<AccountResponse> accountList = new ArrayList<>();
         for (Account savedAccount : accounts) {
             accountList.add(responseMap(savedAccount));
@@ -99,27 +113,29 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public AccountResponse findById(Long id) throws AccountDoesNotExist {
+    public AccountResponse findById(Long id) throws AccountDoesNotExist, UserNotFound, UnauthorizedAccess {
         Optional<Account> account = repository.findById(id);
         if (account.isEmpty()) {
             throw new AccountDoesNotExist("There's no account with the id entered");
         }
+        TenantAccess.assertCanAccess(userService.getCurrentUser(), account.get().getOrganization());
         return responseMap(account.get());
-
     }
 
     @Override
     public void credit(Long accountId, BigDecimal amount) throws AccountDoesNotExist {
-        Account account = repository.findById(accountId).orElseThrow(() -> new AccountDoesNotExist("Account not found"));
+        Account account =
+                repository.findById(accountId).orElseThrow(() -> new AccountDoesNotExist("Account not found"));
 
-        account.setAvailableBalance(account.getAvailableBalance().subtract(amount));
+        account.setAvailableBalance(account.getAvailableBalance().add(amount));
         account.setTotalBalance(account.getTotalBalance().add(amount));
         repository.save(account);
     }
 
     @Override
     public void debit(Long accountId, BigDecimal amount) throws AccountDoesNotExist, InsufficientBalance {
-        Account account = repository.findById(accountId).orElseThrow(() -> new AccountDoesNotExist("Account not found"));
+        Account account =
+                repository.findById(accountId).orElseThrow(() -> new AccountDoesNotExist("Account not found"));
 
         if (account.getTotalBalance().compareTo(amount) < 0) {
             throw new InsufficientBalance("Insufficient funds");
@@ -134,16 +150,19 @@ public class AccountServiceImpl implements AccountService {
         if (accountNumber == null || accountNumber.isBlank()) {
             throw new IsNull("Account number is required");
         }
-        return repository.findByAccountNumber(accountNumber).orElseThrow(() -> new AccountDoesNotExist("Account not found"));
+        return repository
+                .findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new AccountDoesNotExist("Account not found"));
     }
 
-    public List<AccountResponse> getAccountsByOrganization(Long orgId) throws OrganizationDoesNotExist {
-        Organization org = organizationRepository.findById(orgId)
+    public List<AccountResponse> getAccountsByOrganization(Long orgId)
+            throws OrganizationDoesNotExist, UserNotFound, UnauthorizedAccess {
+        Organization org = organizationRepository
+                .findById(orgId)
                 .orElseThrow(() -> new OrganizationDoesNotExist("Organization not found"));
+        TenantAccess.assertCanAccess(userService.getCurrentUser(), org);
 
         List<Account> accounts = repository.findAllByOrganization(org);
-        return accounts.stream()
-                .map(Map::responseMap) // use your existing account mapper
-                .collect(Collectors.toList());
+        return accounts.stream().map(Map::responseMap).collect(Collectors.toList());
     }
 }
