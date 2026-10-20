@@ -13,6 +13,7 @@ import org.app.corporateinternetbanking.organization.exceptions.OrganizationAlre
 import org.app.corporateinternetbanking.organization.exceptions.OrganizationDoesNotExist;
 import org.app.corporateinternetbanking.transaction.exceptions.*;
 import org.app.corporateinternetbanking.user.exceptions.*;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -176,6 +177,15 @@ public class GlobalExceptionHandler {
     public ResponseEntity<GenericResponse> handleNotApproved(NotApproved exception) {
         log.error("Not approved: {}", exception.getMessage());
         return new ResponseEntity<>(GenericResponse.failed(exception.getMessage()), HttpStatus.BAD_REQUEST);
+    }
+
+    // A concurrent request with the same idempotency key lost the race on the unique constraint.
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<GenericResponse> handleDataIntegrityViolation(DataIntegrityViolationException exception) {
+        log.error(
+                "Data integrity violation: {}", exception.getMostSpecificCause().getMessage());
+        return new ResponseEntity<>(
+                GenericResponse.failed("Conflicting request: this transaction may already exist"), HttpStatus.CONFLICT);
     }
 
     @ExceptionHandler(FeignException.class)

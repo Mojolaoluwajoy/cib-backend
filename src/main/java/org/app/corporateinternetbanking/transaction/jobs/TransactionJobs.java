@@ -39,6 +39,7 @@ public class TransactionJobs {
     @Scheduled(cron = "0 0 * * * *")
     public void runExpirationJob() {
         transactionService.expirePendingTransactions();
+        transactionService.expireUnapprovedTransactions();
     }
 
     // Alerts each organization's admins about transfers/payouts that have waited too long for an approver.
