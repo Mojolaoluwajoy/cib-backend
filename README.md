@@ -77,6 +77,9 @@ Testcontainers · Spotless (Palantir Java Format) · GitHub Actions
 
 ## API overview
 
+Interactive docs: **http://localhost:1990/swagger-ui/index.html**. Log in with `POST /auth/login`, click
+**Authorize** and paste the returned token (without the word "Bearer"). The raw OpenAPI spec is at `/v3/api-docs`.
+
 | Area          | Base path               | Highlights                                                           |
 |---------------|-------------------------|----------------------------------------------------------------------|
 | Auth          | `/auth`                 | login, forgotten password, password reset                            |
