@@ -1,6 +1,7 @@
 package org.app.corporateinternetbanking.organization.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import org.app.corporateinternetbanking.commons.response.GenericResponse;
@@ -24,6 +25,7 @@ public class OrganizationController {
     @Autowired
     OrganizationService service;
 
+    @SecurityRequirements
     @Operation(summary = "Send organization and admin registration request")
     @PostMapping("/create")
     public ResponseEntity<GenericResponse> createOrganization(@RequestBody OrganizationRequest request)

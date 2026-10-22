@@ -1,6 +1,7 @@
 package org.app.corporateinternetbanking.user.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.app.corporateinternetbanking.commons.response.GenericResponse;
 import org.app.corporateinternetbanking.security.AuthenticationService;
@@ -30,6 +31,7 @@ public class AuthController {
     @Autowired
     AuthenticationService authenticationService;
 
+    @SecurityRequirements
     @Operation(summary = "Users login")
     @PostMapping("/login")
     public ResponseEntity<GenericResponse> authenticate(@RequestBody LoginRequest request) {
@@ -46,6 +48,7 @@ public class AuthController {
                 HttpStatus.CREATED);
     }
 
+    @SecurityRequirements
     @Operation(summary = "password reset token")
     @PostMapping("/password/token")
     public ResponseEntity<GenericResponse> resetToken(@RequestBody String email) throws InvalidEmail {
@@ -54,6 +57,7 @@ public class AuthController {
                 HttpStatus.CREATED);
     }
 
+    @SecurityRequirements
     @Operation(summary = "Reset forgotten password")
     @PostMapping("/forgotten/password")
     public ResponseEntity<GenericResponse> resetForgottenPassword(@RequestBody ForgotPasswordRequest resetRequest)

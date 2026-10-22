@@ -1,6 +1,7 @@
 package org.app.corporateinternetbanking.user.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import org.app.corporateinternetbanking.commons.response.GenericResponse;
@@ -31,6 +32,7 @@ public class UserController {
         return new ResponseEntity<>(GenericResponse.success(email, "token successfully sent"), HttpStatus.CREATED);
     }
 
+    @SecurityRequirements
     @Operation(summary = "Create a user with token from admin")
     @PostMapping("/create")
     public ResponseEntity<GenericResponse> createUser(@RequestBody UserRegistrationRequest request)
