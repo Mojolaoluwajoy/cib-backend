@@ -1,6 +1,7 @@
 package org.app.corporateinternetbanking.transaction.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.app.corporateinternetbanking.account.exception.AccountDoesNotExist;
@@ -24,6 +25,7 @@ public class WebhookController {
     private final WebhookHandler webhookHandler;
 
     // The body is taken as the raw string because the HMAC signature is computed over the exact bytes Paystack sent.
+    @SecurityRequirements
     @Operation(summary = "It handles webhook")
     @PostMapping("/paystack")
     public ResponseEntity<GenericResponse> handleWebhook(
