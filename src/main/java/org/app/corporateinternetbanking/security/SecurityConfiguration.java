@@ -29,6 +29,8 @@ public class SecurityConfiguration {
 
     private final UserDetailsService userDetailsService;
 
+    private final JsonSecurityErrorHandler securityErrorHandler;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         String[] publicEndPoints = new String[] {
@@ -44,6 +46,8 @@ public class SecurityConfiguration {
             "/webjars/**",
             "/swagger-resources/**",
             "/webhook/paystack",
+            // Spring forwards failed requests here to render the error; it must not be blocked itself
+            "/error",
         };
 
         httpSecurity
@@ -103,6 +107,9 @@ public class SecurityConfiguration {
                         .authenticated()
                         .anyRequest()
                         .authenticated())
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(securityErrorHandler)
+                        .accessDeniedHandler(securityErrorHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

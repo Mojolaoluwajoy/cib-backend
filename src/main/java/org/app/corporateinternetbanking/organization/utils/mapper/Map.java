@@ -63,21 +63,9 @@ public class Map {
 
     public OrganizationOnlyResponse mapResponse(Organization organization) {
         OrganizationOnlyResponse response = new OrganizationOnlyResponse();
-        System.out.println("Looking for admin with org ID: " + organization.getId());
 
         Optional<User> adminOpt = userRepository.findByOrganizationIdAndRole(organization.getId(), UserRole.ADMIN);
-
-        System.out.println("Admin found: " + adminOpt.isPresent());
-        adminOpt.ifPresent(u -> System.out.println("Admin ID: " + u.getId() + ", Role: " + u.getRole() + ", OrgId: "
-                + u.getOrganization().getId()));
-
-        User admin = adminOpt.orElse(null);
-        response.setAdminId(admin != null ? admin.getId() : null);
-
-        // User admin = userRepository
-        //       .findByOrganizationIdAndRole(organization.getId(), UserRole.ADMIN)
-        //     .orElse(null);
-        // response.setAdminId(admin != null ? admin.getId() : null);
+        response.setAdminId(adminOpt.map(User::getId).orElse(null));
         response.setId(organization.getId());
         response.setName(organization.getName());
         response.setRegistrationNumber(organization.getRegistrationNumber());

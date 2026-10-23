@@ -1,5 +1,6 @@
 package org.app.corporateinternetbanking.organization.dto;
 
+import jakarta.validation.constraints.Email;
 import lombok.Getter;
 import lombok.Setter;
 import org.app.corporateinternetbanking.organization.enums.OrganizationStatus;
@@ -8,7 +9,10 @@ import org.app.corporateinternetbanking.organization.enums.OrganizationStatus;
 @Getter
 public class UpdateOrganizationRequest {
     private String name;
+
+    @Email
     private String organizationEmail;
+
     private String registrationNumber;
     private OrganizationStatus organizationStatus;
     private String phoneNumber;

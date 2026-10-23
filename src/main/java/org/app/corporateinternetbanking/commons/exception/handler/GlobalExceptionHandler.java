@@ -1,6 +1,10 @@
 package org.app.corporateinternetbanking.commons.exception.handler;
 
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import feign.FeignException;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.app.corporateinternetbanking.account.exception.AccountDoesNotExist;
 import org.app.corporateinternetbanking.account.exception.InvalidAccount;
@@ -14,14 +18,95 @@ import org.app.corporateinternetbanking.organization.exceptions.OrganizationDoes
 import org.app.corporateinternetbanking.transaction.exceptions.*;
 import org.app.corporateinternetbanking.user.exceptions.*;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+// Every error leaves the API as a GenericResponse. Spring MVC's own exceptions (malformed JSON, failed
+// validation, unknown route, wrong method, ...) keep their status codes via ResponseEntityExceptionHandler;
+// anything nobody anticipated becomes a 500 whose details stay in the log.
 @Slf4j
 @ControllerAdvice
-public class GlobalExceptionHandler {
+public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
+
+    @Override
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(
+            MethodArgumentNotValidException exception, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        Map<String, String> errors = new LinkedHashMap<>();
+        exception
+                .getBindingResult()
+                .getFieldErrors()
+                .forEach(error -> errors.putIfAbsent(error.getField(), error.getDefaultMessage()));
+        String message = errors.entrySet().stream()
+                .map(error -> error.getKey() + " " + error.getValue())
+                .collect(Collectors.joining("; "));
+        log.warn("Validation failed: {}", message);
+
+        GenericResponse body = GenericResponse.failed("Validation failed: " + message);
+        body.setData(errors);
+        return new ResponseEntity<>(body, headers, status);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleHttpMessageNotReadable(
+            HttpMessageNotReadableException exception, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        String message = "Malformed request body";
+        // e.g. an unknown enum constant or text where a number is expected: name the offending field
+        if (exception.getCause() instanceof InvalidFormatException invalid
+                && !invalid.getPath().isEmpty()) {
+            String field = invalid.getPath().get(invalid.getPath().size() - 1).getFieldName();
+            message = "Invalid value for " + field;
+        }
+        log.warn("{}: {}", message, exception.getMostSpecificCause().getMessage());
+        return new ResponseEntity<>(GenericResponse.failed(message), headers, status);
+    }
+
+    // Wraps the remaining Spring MVC exceptions (404, 405, 415, missing parameters, ...) in a GenericResponse
+    @Override
+    protected ResponseEntity<Object> handleExceptionInternal(
+            Exception exception, Object body, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        String message = body instanceof ProblemDetail problem && problem.getDetail() != null
+                ? problem.getDetail()
+                : exception.getMessage();
+        log.warn("Request rejected ({}): {}", status.value(), message);
+        return new ResponseEntity<>(GenericResponse.failed(message), headers, status);
+    }
+
+    // Wrong email or password, or an account that has not been activated yet
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<GenericResponse> handleAuthentication(AuthenticationException exception) {
+        log.warn("Authentication failed: {}", exception.getMessage());
+        String message =
+                exception instanceof DisabledException ? "This account is not active yet" : "Invalid email or password";
+        return new ResponseEntity<>(GenericResponse.failed(message), HttpStatus.UNAUTHORIZED);
+    }
+
+    // Thrown by @PreAuthorize checks inside controllers
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<GenericResponse> handleAccessDenied(AccessDeniedException exception) {
+        log.warn("Access denied: {}", exception.getMessage());
+        return new ResponseEntity<>(
+                GenericResponse.failed("You do not have permission to perform this action"), HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<GenericResponse> handleUnexpected(Exception exception) {
+        log.error("Unexpected error", exception);
+        return new ResponseEntity<>(
+                GenericResponse.failed("Something went wrong. Please try again later."),
+                HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 
     @ExceptionHandler(UserAlreadyRegistered.class)
     public ResponseEntity<GenericResponse> handleUserAlreadyRegistered(UserAlreadyRegistered registered) {

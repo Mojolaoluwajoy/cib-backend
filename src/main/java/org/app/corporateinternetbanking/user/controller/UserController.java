@@ -3,6 +3,7 @@ package org.app.corporateinternetbanking.user.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.util.List;
 import org.app.corporateinternetbanking.commons.response.GenericResponse;
 import org.app.corporateinternetbanking.organization.exceptions.OrganizationDoesNotExist;
@@ -26,7 +27,7 @@ public class UserController {
 
     @Operation(summary = "Send user creation token invitation to email")
     @PostMapping("/invitation")
-    public ResponseEntity<GenericResponse> sendInvitation(@RequestBody InvitationRequest request)
+    public ResponseEntity<GenericResponse> sendInvitation(@Valid @RequestBody InvitationRequest request)
             throws UserNotFound, UserAlreadyRegistered, UnauthorizedAccess {
         String email = service.sendInvitationTokenToUser(request);
         return new ResponseEntity<>(GenericResponse.success(email, "token successfully sent"), HttpStatus.CREATED);
@@ -35,7 +36,7 @@ public class UserController {
     @SecurityRequirements
     @Operation(summary = "Create a user with token from admin")
     @PostMapping("/create")
-    public ResponseEntity<GenericResponse> createUser(@RequestBody UserRegistrationRequest request)
+    public ResponseEntity<GenericResponse> createUser(@Valid @RequestBody UserRegistrationRequest request)
             throws UserAlreadyRegistered, UnauthorizedAccess, OrganizationDoesNotExist, TokenExpiredOrInvalid,
                     SuperAdminAlreadyExists, UserNotFound {
         UserResponse response = service.createUserWithToken(request);
@@ -61,7 +62,7 @@ public class UserController {
 
     @Operation(summary = "To update one's profile")
     @PutMapping("/profile")
-    public ResponseEntity<GenericResponse> updateOwnProfile(@RequestBody UpdateProfileRequest request)
+    public ResponseEntity<GenericResponse> updateOwnProfile(@Valid @RequestBody UpdateProfileRequest request)
             throws UserNotFound, UserAlreadyRegistered {
         return ResponseEntity.ok(GenericResponse.success(service.updateProfile(request), "Profile updated"));
     }
@@ -69,7 +70,7 @@ public class UserController {
     @Operation(summary = "To update other users profile")
     @PutMapping("/{userId}/profile")
     public ResponseEntity<GenericResponse> updateUserProfile(
-            @PathVariable Long userId, @RequestBody UpdateProfileRequest request)
+            @PathVariable Long userId, @Valid @RequestBody UpdateProfileRequest request)
             throws UserNotFound, UserAlreadyRegistered, UnauthorizedAccess {
         return ResponseEntity.ok(
                 GenericResponse.success(service.updateUserProfile(userId, request), "Profile updated"));
