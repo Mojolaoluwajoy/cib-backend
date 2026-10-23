@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -188,6 +189,36 @@ class ErrorResponsesIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
+    void passwordResetDoesNotRevealWhichEmailsAreRegistered() throws Exception {
+        user("admin@acme.com", UserRole.ADMIN, organization("Acme"));
+
+        String registered = mvc.perform(json(post("/auth/password/token"), "{\"email\":\"admin@acme.com\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data").doesNotExist())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        String unregistered = mvc.perform(json(post("/auth/password/token"), "{\"email\":\"nobody@acme.com\"}"))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        assertThat(unregistered).isEqualTo(registered);
+        verify(mailSender, times(1)).send(any(SimpleMailMessage.class));
+
+        // Completing a reset: an unknown email looks exactly like a bad token
+        String reset = "{\"email\":\"%s\",\"token\":\"bogus\",\"newPassword\":\"N3w-Password!\"}";
+        String badToken = mvc.perform(json(post("/auth/forgotten/password"), reset.formatted("admin@acme.com")))
+                .andExpect(status().isBadRequest())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        mvc.perform(json(post("/auth/forgotten/password"), reset.formatted("nobody@acme.com")))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(badToken));
+    }
+
+    @Test
     void missingTokenIs401AndWrongRoleIs403WithAMessage() throws Exception {
         mvc.perform(get("/accounts/all"))
                 .andExpect(status().isUnauthorized())
@@ -206,7 +237,8 @@ class ErrorResponsesIntegrationTest extends IntegrationTestBase {
 
         mvc.perform(get("/does-not-exist").header("Authorization", bearer(maker)))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.success").value(false));
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Not found: GET /does-not-exist"));
     }
 
     private ResultActions login(String email, String password) throws Exception {

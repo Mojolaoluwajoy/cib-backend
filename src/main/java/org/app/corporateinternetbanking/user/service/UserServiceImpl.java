@@ -173,9 +173,10 @@ public class UserServiceImpl implements UserService {
     @Override
     public String resetForgottenPassword(ForgotPasswordRequest forgotPasswordRequest)
             throws InvalidEmail, TokenExpiredOrInvalid {
+        // An unknown email gets the same answer as a bad token, so this can't be used to discover accounts either.
         User user = repository
                 .findByEmail(forgotPasswordRequest.getEmail())
-                .orElseThrow(() -> new InvalidEmail("Email not found"));
+                .orElseThrow(() -> new TokenExpiredOrInvalid("Token expired or its invalid"));
         // Token must be a reset token for this user, issued before their current password was set.
         if (!jwtService.isPasswordResetTokenValid(forgotPasswordRequest.getToken(), user)) {
             throw new TokenExpiredOrInvalid("Token expired or its invalid");
@@ -186,11 +187,19 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public PasswordResetResponse sendForgotPasswordToken(String email) throws InvalidEmail {
-        User user = repository.findByEmail(email).orElseThrow(() -> new InvalidEmail("Email not found"));
-        String token = jwtService.generatePasswordResetToken(user);
-        senderService.sendEmail(user.getEmail(), "Password reset token", "Your password reset token is: \n" + token);
-        return PasswordResetResponseMap.resetResponseMap(user);
+    // Behaves the same whether or not the email is registered, so the endpoint can't be used to discover accounts.
+    public void sendForgotPasswordToken(String email) {
+        repository
+                .findByEmail(email)
+                .ifPresentOrElse(
+                        user -> {
+                            String token = jwtService.generatePasswordResetToken(user);
+                            senderService.sendEmail(
+                                    user.getEmail(),
+                                    "Password reset token",
+                                    "Your password reset token is: \n" + token);
+                        },
+                        () -> log.info("Password reset requested for an unregistered email"));
     }
 
     public void sendMail(InvitationRequest invitationRequest, String token) {

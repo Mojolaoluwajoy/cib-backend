@@ -25,7 +25,7 @@ public interface UserService {
     String resetForgottenPassword(ForgotPasswordRequest forgotPasswordRequest)
             throws InvalidEmail, TokenExpiredOrInvalid;
 
-    PasswordResetResponse sendForgotPasswordToken(String email) throws InvalidEmail;
+    void sendForgotPasswordToken(String email);
 
     UserResponse updateUserProfile(Long userId, UpdateProfileRequest request)
             throws UserNotFound, UnauthorizedAccess, UserAlreadyRegistered;
