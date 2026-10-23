@@ -11,6 +11,8 @@ import org.app.corporateinternetbanking.organization.domain.entity.Organization;
 import org.app.corporateinternetbanking.organization.domain.repository.OrganizationRepository;
 import org.app.corporateinternetbanking.organization.enums.OrganizationStatus;
 import org.app.corporateinternetbanking.security.JwtService;
+import org.app.corporateinternetbanking.security.LoginThrottle;
+import org.app.corporateinternetbanking.security.session.SessionService;
 import org.app.corporateinternetbanking.transaction.domain.entity.Transaction;
 import org.app.corporateinternetbanking.transaction.domain.repository.TransactionRepository;
 import org.app.corporateinternetbanking.transaction.enums.TransactionStatus;
@@ -92,11 +94,18 @@ public abstract class IntegrationTestBase {
     @Autowired
     protected PasswordEncoder passwordEncoder;
 
+    @Autowired
+    protected SessionService sessionService;
+
+    @Autowired
+    protected LoginThrottle loginThrottle;
+
     @BeforeEach
     void resetDatabase() {
         jdbc.execute("TRUNCATE ledger_entry, notification, \"transaction\", payout_recipient, account, users,"
                 + " organization RESTART IDENTITY CASCADE");
         jdbc.update("UPDATE currency SET status = 'ACTIVE' WHERE code = 'NGN'");
+        loginThrottle.clear();
     }
 
     @AfterEach
@@ -155,7 +164,7 @@ public abstract class IntegrationTestBase {
     }
 
     protected String bearer(User user) {
-        return "Bearer " + jwtService.generateToken(user);
+        return "Bearer " + sessionService.start(user).getToken();
     }
 
     // For calling services directly (e.g. from worker threads): the services read the current user from here.

@@ -37,6 +37,8 @@ public class SecurityConfiguration {
             "/auth/login",
             "/auth/password/token",
             "/auth/forgotten/password",
+            "/auth/refresh",
+            "/auth/logout",
             "/users/create",
             "/organizations/create",
             "/swagger-ui/**",

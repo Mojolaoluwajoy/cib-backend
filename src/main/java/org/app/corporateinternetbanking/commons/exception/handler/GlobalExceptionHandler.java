@@ -283,14 +283,31 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 GenericResponse.failed("Conflicting request: this transaction may already exist"), HttpStatus.CONFLICT);
     }
 
+    // Paystack and the exchange-rate API: the client gets a generic message, the details stay in the log. The URL is
+    // not logged because the exchange-rate API key is part of its path.
     @ExceptionHandler(FeignException.class)
     public ResponseEntity<GenericResponse> handleFeignException(FeignException exception) {
-        log.error(
-                "External provider error ({} {}): {}",
-                exception.status(),
-                exception.request() != null ? exception.request().url() : "",
-                exception.contentUTF8());
+        String call = exception.request() != null && exception.request().requestTemplate() != null
+                ? exception.request().requestTemplate().methodMetadata().configKey()
+                : "unknown";
+        log.error("External provider error ({} from {}): {}", exception.status(), call, exception.contentUTF8());
         return new ResponseEntity<>(
-                GenericResponse.failed("Payment provider error: " + exception.contentUTF8()), HttpStatus.BAD_GATEWAY);
+                GenericResponse.failed("An external provider could not process the request. Please try again later."),
+                HttpStatus.BAD_GATEWAY);
+    }
+
+    @ExceptionHandler(TooManyLoginAttempts.class)
+    public ResponseEntity<GenericResponse> handleTooManyLoginAttempts(TooManyLoginAttempts exception) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header(
+                        HttpHeaders.RETRY_AFTER,
+                        String.valueOf(exception.getRetryAfter().toSeconds()))
+                .body(GenericResponse.failed(exception.getMessage()));
+    }
+
+    @ExceptionHandler(SessionExpired.class)
+    public ResponseEntity<GenericResponse> handleSessionExpired(SessionExpired exception) {
+        log.warn("Session refresh rejected: {}", exception.getMessage());
+        return new ResponseEntity<>(GenericResponse.failed(exception.getMessage()), HttpStatus.UNAUTHORIZED);
     }
 }
