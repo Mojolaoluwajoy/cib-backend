@@ -32,6 +32,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 // Every error leaves the API as a GenericResponse. Spring MVC's own exceptions (malformed JSON, failed
 // validation, unknown route, wrong method, ...) keep their status codes via ResponseEntityExceptionHandler;
@@ -70,6 +71,15 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         }
         log.warn("{}: {}", message, exception.getMostSpecificCause().getMessage());
         return new ResponseEntity<>(GenericResponse.failed(message), headers, status);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleNoResourceFoundException(
+            NoResourceFoundException exception, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        String path = "/" + exception.getResourcePath();
+        log.warn("No endpoint for {} {}", exception.getHttpMethod(), path);
+        return new ResponseEntity<>(
+                GenericResponse.failed("Not found: " + exception.getHttpMethod() + " " + path), headers, status);
     }
 
     // Wraps the remaining Spring MVC exceptions (404, 405, 415, missing parameters, ...) in a GenericResponse
