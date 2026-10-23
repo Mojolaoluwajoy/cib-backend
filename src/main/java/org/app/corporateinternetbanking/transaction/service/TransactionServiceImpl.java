@@ -127,6 +127,9 @@ public class TransactionServiceImpl implements TransactionService {
             throws IsNull, AccountDoesNotExist, UserNotFound, InvalidAmount, UnauthorizedAccess, DuplicateTransaction,
                     InsufficientBalance {
         Transaction transaction = validateTransaction(request);
+        if (request.getPayoutRecipientId() == null) {
+            throw new IsNull("payoutRecipientId is required for a payout");
+        }
 
         Account source = validateAccountNumber(request.getSourceAccount());
         TenantAccess.assertMemberOf(transaction.getCreatedBy(), source.getOrganization());

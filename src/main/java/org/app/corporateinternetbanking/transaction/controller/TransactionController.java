@@ -3,6 +3,7 @@ package org.app.corporateinternetbanking.transaction.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +16,7 @@ import org.app.corporateinternetbanking.transaction.dto.TransactionApprovalReque
 import org.app.corporateinternetbanking.transaction.dto.TransactionApprovalResponse;
 import org.app.corporateinternetbanking.transaction.dto.TransactionResponse;
 import org.app.corporateinternetbanking.transaction.dto.TransferRequest;
+import org.app.corporateinternetbanking.transaction.enums.TransactionType;
 import org.app.corporateinternetbanking.transaction.exceptions.*;
 import org.app.corporateinternetbanking.transaction.service.ApprovalService;
 import org.app.corporateinternetbanking.transaction.service.TransactionServiceImpl;
@@ -40,10 +42,14 @@ public class TransactionController {
     @Operation(summary = "Initiate transaction")
     @PostMapping("/initiate")
     public ResponseEntity<GenericResponse> initiateTransaction(
-            @RequestBody TransferRequest request, HttpServletRequest servletRequest)
+            @Valid @RequestBody TransferRequest request, HttpServletRequest servletRequest)
             throws InvalidAmount, AccountDoesNotExist, UserNotFound, UnauthorizedAccess, DuplicateTransaction,
-                    InsufficientBalance, InvalidAccount, IsNull {
+                    InsufficientBalance, InvalidAccount, IsNull, UnsupportedTransactionType {
         log.info("URI: " + servletRequest.getRequestURI());
+        if (request.getType() == TransactionType.EXTERNAL_DEPOSIT) {
+            throw new UnsupportedTransactionType(
+                    "External deposits cannot be initiated manually; they arrive through the Paystack webhook");
+        }
         TransactionResponse response = service.initiateTransaction(request);
         return new ResponseEntity<>(
                 GenericResponse.success(response, "Transaction successfully initiated...waiting for approval"),
@@ -52,7 +58,7 @@ public class TransactionController {
 
     @Operation(summary = "Approve transaction")
     @PostMapping("/approve")
-    public ResponseEntity<GenericResponse> grantApproval(@RequestBody TransactionApprovalRequest request)
+    public ResponseEntity<GenericResponse> grantApproval(@Valid @RequestBody TransactionApprovalRequest request)
             throws TransactionAlreadyProcessed, TransactionDoesNotExist, InvalidStatus, UnsupportedTransactionType,
                     UserNotFound, UnauthorizedAccess, InvalidAmount, AccountDoesNotExist, CurrencyNotFound,
                     InsufficientBalance, IsNull {

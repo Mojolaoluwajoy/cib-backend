@@ -1,8 +1,12 @@
 package org.app.corporateinternetbanking.user.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.app.corporateinternetbanking.commons.response.GenericResponse;
 import org.app.corporateinternetbanking.security.AuthenticationService;
 import org.app.corporateinternetbanking.user.dto.ForgotPasswordRequest;
@@ -31,17 +35,20 @@ public class AuthController {
     @Autowired
     AuthenticationService authenticationService;
 
+    @Autowired
+    ObjectMapper objectMapper;
+
     @SecurityRequirements
     @Operation(summary = "Users login")
     @PostMapping("/login")
-    public ResponseEntity<GenericResponse> authenticate(@RequestBody LoginRequest request) {
+    public ResponseEntity<GenericResponse> authenticate(@Valid @RequestBody LoginRequest request) {
         LoginResponse response = authenticationService.Authenticate(request);
         return new ResponseEntity<>(GenericResponse.success(response, "Authentication successful"), HttpStatus.OK);
     }
 
     @Operation(summary = "change password")
     @PostMapping("/password/reset")
-    public ResponseEntity<GenericResponse> resetPassword(@RequestBody PasswordResetRequest resetRequest)
+    public ResponseEntity<GenericResponse> resetPassword(@Valid @RequestBody PasswordResetRequest resetRequest)
             throws IncorrectPassword, InvalidEmail {
         return new ResponseEntity<>(
                 GenericResponse.success(service.resetPassword(resetRequest), "Your password has been reset"),
@@ -51,19 +58,39 @@ public class AuthController {
     @SecurityRequirements
     @Operation(summary = "password reset token")
     @PostMapping("/password/token")
-    public ResponseEntity<GenericResponse> resetToken(@RequestBody String email) throws InvalidEmail {
+    public ResponseEntity<GenericResponse> resetToken(@RequestBody String body) throws InvalidEmail {
         return new ResponseEntity<>(
-                GenericResponse.success(service.sendForgotPasswordToken(email), "A token has bee sent to your email"),
+                GenericResponse.success(
+                        service.sendForgotPasswordToken(emailFrom(body)), "A token has been sent to your email"),
                 HttpStatus.CREATED);
     }
 
     @SecurityRequirements
     @Operation(summary = "Reset forgotten password")
     @PostMapping("/forgotten/password")
-    public ResponseEntity<GenericResponse> resetForgottenPassword(@RequestBody ForgotPasswordRequest resetRequest)
-            throws InvalidEmail, TokenExpiredOrInvalid {
+    public ResponseEntity<GenericResponse> resetForgottenPassword(
+            @Valid @RequestBody ForgotPasswordRequest resetRequest) throws InvalidEmail, TokenExpiredOrInvalid {
         return new ResponseEntity<>(
                 GenericResponse.success(service.resetForgottenPassword(resetRequest), "Your password has been reset"),
                 HttpStatus.CREATED);
+    }
+
+    // Accepts {"email": "..."} as well as the bare address (or JSON string) this endpoint originally took.
+    private String emailFrom(String body) throws InvalidEmail {
+        String email = body.trim();
+        try {
+            if (email.startsWith("{")) {
+                JsonNode field = objectMapper.readTree(email).get("email");
+                email = field == null || field.isNull() ? "" : field.asText().trim();
+            } else if (email.startsWith("\"")) {
+                email = objectMapper.readValue(email, String.class).trim();
+            }
+        } catch (JsonProcessingException e) {
+            throw new InvalidEmail("Send the email as {\"email\": \"you@example.com\"}");
+        }
+        if (email.isEmpty()) {
+            throw new InvalidEmail("email is required");
+        }
+        return email;
     }
 }

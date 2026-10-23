@@ -2,6 +2,7 @@ package org.app.corporateinternetbanking.currency.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.util.List;
 import org.app.corporateinternetbanking.commons.response.GenericResponse;
 import org.app.corporateinternetbanking.currency.dto.CurrencyRequest;
@@ -23,7 +24,8 @@ public class CurrencyController {
 
     @Operation(summary = "Change the status of a currency")
     @PostMapping("/status")
-    public ResponseEntity<GenericResponse> changeStatus(@RequestBody CurrencyRequest request) throws CurrencyNotFound {
+    public ResponseEntity<GenericResponse> changeStatus(@Valid @RequestBody CurrencyRequest request)
+            throws CurrencyNotFound {
         CurrencyResponse response = currencyService.changeCurrencyStatus(request);
         return new ResponseEntity<>(GenericResponse.success(response, "Status successfully changed"), HttpStatus.OK);
     }

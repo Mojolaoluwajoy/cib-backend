@@ -2,6 +2,7 @@ package org.app.corporateinternetbanking.transaction.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.app.corporateinternetbanking.account.exception.AccountDoesNotExist;
@@ -35,7 +36,7 @@ public class ExternalTransactionController {
 
     @Operation(summary = "It fund the system account from an external account(paystack")
     @PostMapping("/fund")
-    public ResponseEntity<GenericResponse> fund(@RequestBody FundRequest fundRequest)
+    public ResponseEntity<GenericResponse> fund(@Valid @RequestBody FundRequest fundRequest)
             throws UserNotFound, InvalidAccount, InvalidAmount, InsufficientBalance, UnauthorizedAccess, IsNull,
                     DuplicateTransaction, AccountDoesNotExist {
         fundRequest.setType(TransactionType.EXTERNAL_FUNDING);
@@ -47,7 +48,7 @@ public class ExternalTransactionController {
 
     @Operation(summary = "It initiates a payout from the system account to an external one")
     @PostMapping("/payout")
-    public ResponseEntity<GenericResponse> payout(@RequestBody PayoutRequest payoutRequest)
+    public ResponseEntity<GenericResponse> payout(@Valid @RequestBody PayoutRequest payoutRequest)
             throws UserNotFound, InvalidAccount, InvalidAmount, InsufficientBalance, UnauthorizedAccess, IsNull,
                     DuplicateTransaction, AccountDoesNotExist {
         payoutRequest.setType(TransactionType.EXTERNAL_PAYOUT);
