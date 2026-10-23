@@ -69,8 +69,13 @@ public class SecurityConfiguration {
                         .authenticated()
                         .requestMatchers("/organizations/findBy")
                         .hasAnyRole(UserRole.SUPER_ADMIN.name(), UserRole.ADMIN.name())
+                        // Non-super-admins only get their own organization back from the service
                         .requestMatchers("/organizations/viewAll")
-                        .hasAnyRole(UserRole.SUPER_ADMIN.name(), UserRole.ADMIN.name())
+                        .hasAnyRole(
+                                UserRole.SUPER_ADMIN.name(),
+                                UserRole.ADMIN.name(),
+                                UserRole.MAKER.name(),
+                                UserRole.APPROVER.name())
                         .requestMatchers(HttpMethod.PUT, "/organizations/*/profile")
                         .hasAnyRole(UserRole.SUPER_ADMIN.name(), UserRole.ADMIN.name())
                         .requestMatchers("/organizations/approve")
