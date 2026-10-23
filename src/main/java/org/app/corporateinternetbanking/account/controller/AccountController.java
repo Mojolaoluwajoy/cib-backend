@@ -2,6 +2,7 @@ package org.app.corporateinternetbanking.account.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.util.List;
 import org.app.corporateinternetbanking.account.dto.AccountRequest;
 import org.app.corporateinternetbanking.account.dto.AccountResponse;
@@ -28,7 +29,7 @@ public class AccountController {
 
     @Operation(summary = "Create account")
     @PostMapping("/create")
-    public ResponseEntity<GenericResponse> createAccount(@RequestBody AccountRequest request)
+    public ResponseEntity<GenericResponse> createAccount(@Valid @RequestBody AccountRequest request)
             throws OrganizationDoesNotExist, UserNotFound, CurrencyNotFound, CurrencyNotActive {
         AccountResponse response = service.createAccount(request);
         return new ResponseEntity<>(
@@ -63,7 +64,7 @@ public class AccountController {
     @PostMapping("/create/{orgId}")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<GenericResponse> createAccountForOrg(
-            @PathVariable Long orgId, @RequestBody AccountRequest request)
+            @PathVariable Long orgId, @Valid @RequestBody AccountRequest request)
             throws OrganizationDoesNotExist, CurrencyNotFound, CurrencyNotActive, UserNotFound {
         AccountResponse response = service.createAccountForOrg(orgId, request);
         return new ResponseEntity<>(

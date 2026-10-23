@@ -3,6 +3,7 @@ package org.app.corporateinternetbanking.organization.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.util.List;
 import org.app.corporateinternetbanking.commons.response.GenericResponse;
 import org.app.corporateinternetbanking.organization.dto.*;
@@ -28,7 +29,7 @@ public class OrganizationController {
     @SecurityRequirements
     @Operation(summary = "Send organization and admin registration request")
     @PostMapping("/create")
-    public ResponseEntity<GenericResponse> createOrganization(@RequestBody OrganizationRequest request)
+    public ResponseEntity<GenericResponse> createOrganization(@Valid @RequestBody OrganizationRequest request)
             throws UserAlreadyRegistered, OrganizationAlreadyExist {
         OrganizationRegistrationResponse response = service.registerOrganization(request);
         return new ResponseEntity<>(
@@ -38,7 +39,7 @@ public class OrganizationController {
 
     @Operation(summary = "Approve organization and admin registration request")
     @PostMapping("/approve")
-    public ResponseEntity<GenericResponse> approveOrganization(@RequestBody OrganizationApprovalRequest request)
+    public ResponseEntity<GenericResponse> approveOrganization(@Valid @RequestBody OrganizationApprovalRequest request)
             throws UserAlreadyRegistered, UserNotFound, OrganizationAlreadyProcessed, OrganizationDoesNotExist {
         OrganizationApprovalResponse response = service.processOrganizationRegistration(request);
         return new ResponseEntity<>(
@@ -65,7 +66,7 @@ public class OrganizationController {
     @Operation(summary = "update an organization profile")
     @PutMapping("/{orgId}/profile")
     public ResponseEntity<GenericResponse> updateOrganization(
-            @PathVariable Long orgId, @RequestBody UpdateOrganizationRequest request)
+            @PathVariable Long orgId, @Valid @RequestBody UpdateOrganizationRequest request)
             throws OrganizationDoesNotExist, UserNotFound, UnauthorizedAccess {
         return ResponseEntity.ok(
                 GenericResponse.success(service.updateOrganization(orgId, request), "Organization updated"));
