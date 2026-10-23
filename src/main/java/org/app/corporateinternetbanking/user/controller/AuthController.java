@@ -59,9 +59,9 @@ public class AuthController {
     @Operation(summary = "password reset token")
     @PostMapping("/password/token")
     public ResponseEntity<GenericResponse> resetToken(@RequestBody String body) throws InvalidEmail {
+        service.sendForgotPasswordToken(emailFrom(body));
         return new ResponseEntity<>(
-                GenericResponse.success(
-                        service.sendForgotPasswordToken(emailFrom(body)), "A token has been sent to your email"),
+                GenericResponse.success(null, "If an account exists for that email, a reset token has been sent to it"),
                 HttpStatus.CREATED);
     }
 
