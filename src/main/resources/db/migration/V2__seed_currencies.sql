@@ -1,3 +1,4 @@
+-- Supported currencies, all inactive until a super admin enables them (formerly data.sql, which ran on every start).
 INSERT INTO currency(name,code,symbol,status) VALUES
 ('Nigerian Naira', 'NGN', '#','INACTIVE'),
 ('US Dollar','USD','$','INACTIVE'),
@@ -5,4 +6,3 @@ INSERT INTO currency(name,code,symbol,status) VALUES
 ('Canadian Dollar','CAD','C$','INACTIVE'),
 ('Australian Dollar','AUD','A$','INACTIVE')
 ON CONFLICT (code) DO NOTHING;
-
