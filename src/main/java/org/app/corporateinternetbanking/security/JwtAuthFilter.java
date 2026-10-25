@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.app.corporateinternetbanking.security.session.SessionService;
 import org.app.corporateinternetbanking.user.domain.entity.User;
 import org.app.corporateinternetbanking.user.domain.repository.UserRepository;
 import org.app.corporateinternetbanking.user.enums.UserStatus;
@@ -28,6 +29,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
     private final UserRepository userRepository;
+    private final SessionService sessionService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -43,9 +45,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String token = authorization.substring(7);
         String email;
         boolean tokenValid;
+        String sessionId;
         try {
             email = jwtService.extractUsername(token);
             tokenValid = jwtService.isTokenValid(token);
+            sessionId = jwtService.extractSessionId(token);
         } catch (JwtException | IllegalArgumentException e) {
             // Expired, tampered or malformed token: answer 401 instead of letting it bubble up as a 500.
             log.warn("Rejected JWT: {}", e.getMessage());
@@ -59,6 +63,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             if (!tokenValid) {
                 log.warn("Invalid or expired JWT token for: {}", email);
                 sendUnauthorized(response, "Token is invalid or expired");
+                return;
+            }
+
+            // The session ended (logout, password change, revoked) or the token predates sessions
+            if (!sessionService.isActive(sessionId)) {
+                log.warn("Token for ended session used by: {}", email);
+                sendUnauthorized(response, "Your session has ended. Please log in again");
                 return;
             }
 
