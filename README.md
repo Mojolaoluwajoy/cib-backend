@@ -95,6 +95,21 @@ Interactive docs: **http://localhost:1990/swagger-ui/index.html**. Log in with `
 Every endpoint except login, registration, password reset and the webhook needs an `Authorization: Bearer <token>`
 header.
 
+## Authentication
+
+1. `POST /auth/login` returns an access `token` (valid for `expiresIn` seconds, 30 minutes by default) and a
+   `refreshToken` (valid for 7 days).
+2. Send the access token as `Authorization: Bearer <token>`.
+3. Before it expires, or after a 401, call `POST /auth/refresh` with `{"refreshToken": "..."}`. You get a new pair;
+   the old refresh token stops working. Reusing an old refresh token ends the whole session, because it means the token
+   was copied.
+4. `POST /auth/logout` with the refresh token ends the session immediately, including its access token. Changing or
+   resetting a password signs out every device.
+
+Login protection: 5 failed attempts lock that email for 15 minutes, and 20 failed attempts from one IP address block it
+for 15 minutes (`429` with a `Retry-After` header). Browsers may only call the API from `CORS_ALLOWED_ORIGINS`
+(defaults to `FRONTEND_BASE_URL`). All limits are configurable in `.env`.
+
 ## Tests
 
 ```bash

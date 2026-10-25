@@ -6,16 +6,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.app.corporateinternetbanking.commons.response.GenericResponse;
 import org.app.corporateinternetbanking.security.AuthenticationService;
+import org.app.corporateinternetbanking.security.session.SessionService;
 import org.app.corporateinternetbanking.user.dto.ForgotPasswordRequest;
 import org.app.corporateinternetbanking.user.dto.PasswordResetRequest;
 import org.app.corporateinternetbanking.user.dto.authDto.LoginRequest;
 import org.app.corporateinternetbanking.user.dto.authDto.LoginResponse;
+import org.app.corporateinternetbanking.user.dto.authDto.RefreshTokenRequest;
 import org.app.corporateinternetbanking.user.exceptions.IncorrectPassword;
 import org.app.corporateinternetbanking.user.exceptions.InvalidEmail;
+import org.app.corporateinternetbanking.user.exceptions.SessionExpired;
 import org.app.corporateinternetbanking.user.exceptions.TokenExpiredOrInvalid;
+import org.app.corporateinternetbanking.user.exceptions.TooManyLoginAttempts;
 import org.app.corporateinternetbanking.user.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -36,14 +41,36 @@ public class AuthController {
     AuthenticationService authenticationService;
 
     @Autowired
+    SessionService sessionService;
+
+    @Autowired
     ObjectMapper objectMapper;
 
     @SecurityRequirements
     @Operation(summary = "Users login")
     @PostMapping("/login")
-    public ResponseEntity<GenericResponse> authenticate(@Valid @RequestBody LoginRequest request) {
-        LoginResponse response = authenticationService.Authenticate(request);
+    public ResponseEntity<GenericResponse> authenticate(
+            @Valid @RequestBody LoginRequest request, HttpServletRequest servletRequest) throws TooManyLoginAttempts {
+        LoginResponse response = authenticationService.Authenticate(request, servletRequest.getRemoteAddr());
         return new ResponseEntity<>(GenericResponse.success(response, "Authentication successful"), HttpStatus.OK);
+    }
+
+    @SecurityRequirements
+    @Operation(summary = "Exchange a refresh token for a new access token and refresh token")
+    @PostMapping("/refresh")
+    public ResponseEntity<GenericResponse> refresh(@Valid @RequestBody RefreshTokenRequest request)
+            throws SessionExpired {
+        return new ResponseEntity<>(
+                GenericResponse.success(sessionService.refresh(request.getRefreshToken()), "Token refreshed"),
+                HttpStatus.OK);
+    }
+
+    @SecurityRequirements
+    @Operation(summary = "Log out: ends the session, so its refresh token and access tokens stop working")
+    @PostMapping("/logout")
+    public ResponseEntity<GenericResponse> logout(@Valid @RequestBody RefreshTokenRequest request) {
+        sessionService.logout(request.getRefreshToken());
+        return new ResponseEntity<>(GenericResponse.success(null, "Logged out"), HttpStatus.OK);
     }
 
     @Operation(summary = "change password")

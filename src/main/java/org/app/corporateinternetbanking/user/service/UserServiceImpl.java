@@ -10,6 +10,7 @@ import org.app.corporateinternetbanking.email.EmailSenderService;
 import org.app.corporateinternetbanking.organization.exceptions.OrganizationDoesNotExist;
 import org.app.corporateinternetbanking.security.JwtService;
 import org.app.corporateinternetbanking.security.TenantAccess;
+import org.app.corporateinternetbanking.security.session.SessionService;
 import org.app.corporateinternetbanking.user.domain.entity.User;
 import org.app.corporateinternetbanking.user.domain.repository.UserRepository;
 import org.app.corporateinternetbanking.user.dto.*;
@@ -33,6 +34,7 @@ import org.springframework.stereotype.Service;
 public class UserServiceImpl implements UserService {
     private final UserRepository repository;
     private final PasswordEncoder passwordEncoder;
+    private final SessionService sessionService;
 
     @Autowired
     EmailSenderService senderService;
@@ -164,6 +166,8 @@ public class UserServiceImpl implements UserService {
             String newPassword = passwordEncoder.encode(passwordResetRequest.getNewPassword());
             user.setPassword(newPassword);
             repository.save(user);
+            // Signs out every device, including this one, in case the old password was compromised
+            sessionService.endAllSessions(user);
         } else {
             throw new IncorrectPassword("The old password you entered is incorrect");
         }
@@ -183,6 +187,7 @@ public class UserServiceImpl implements UserService {
         }
         user.setPassword(passwordEncoder.encode(forgotPasswordRequest.getNewPassword()));
         repository.save(user);
+        sessionService.endAllSessions(user);
         return "Password reset successful";
     }
 

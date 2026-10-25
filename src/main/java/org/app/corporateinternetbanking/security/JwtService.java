@@ -61,8 +61,10 @@ public class JwtService {
         return claims.get("type") == null && !isTokenExpired(claims);
     }
 
-    public String generateToken(User user) {
+    // Login tokens belong to a session (see SessionService); JwtAuthFilter rejects them once it has ended.
+    public String generateToken(User user, String sessionId) {
         Map<String, Object> claims = new HashMap<>();
+        claims.put(SESSION_ID, sessionId);
         claims.put("id", user.getId());
         claims.put("username", user.getEmail());
         claims.put("role", user.getRole());
@@ -73,6 +75,14 @@ public class JwtService {
                 .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
                 .signWith(getSecretKey())
                 .compact();
+    }
+
+    public String extractSessionId(String token) {
+        return extractAllClaims(token).get(SESSION_ID, String.class);
+    }
+
+    public long accessTokenSeconds() {
+        return jwtExpiration / 1000;
     }
 
     public String generateInvitationToken(String email) {
@@ -95,6 +105,7 @@ public class JwtService {
         return claims != null && passwordFingerprint(user.getPassword()).equals(claims.get("pwd"));
     }
 
+    private static final String SESSION_ID = "sid";
     private static final String INVITATION = "INVITATION";
     private static final String PASSWORD_RESET = "PASSWORD_RESET";
 
