@@ -110,6 +110,11 @@ Login protection: 5 failed attempts lock that email for 15 minutes, and 20 faile
 for 15 minutes (`429` with a `Retry-After` header). Browsers may only call the API from `CORS_ALLOWED_ORIGINS`
 (defaults to `FRONTEND_BASE_URL`). All limits are configurable in `.env`.
 
+## Database
+
+The schema is managed by Flyway migrations in `src/main/resources/db/migration`, which run automatically at startup.
+To change it, add a new migration; see [docs/database-migrations.md](docs/database-migrations.md).
+
 ## Tests
 
 ```bash
