@@ -5,11 +5,15 @@ import java.math.RoundingMode;
 import java.util.Map;
 import org.app.corporateinternetbanking.integration.paystack.dto.CreateCustomerRequest;
 import org.app.corporateinternetbanking.integration.paystack.dto.CreateDvaRequest;
+import org.app.corporateinternetbanking.integration.paystack.dto.PaystackBankListResponse;
 import org.app.corporateinternetbanking.integration.paystack.dto.PaystackCustomerResponse;
 import org.app.corporateinternetbanking.integration.paystack.dto.PaystackDvaResponse;
+import org.app.corporateinternetbanking.integration.paystack.dto.PaystackResolveAccountResponse;
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 // The Authorization header is added by FeignConfiguration's interceptor.
 @FeignClient(name = "paystack-client", url = "https://api.paystack.co", configuration = FeignConfiguration.class)
@@ -29,6 +33,18 @@ public interface PayStackClient {
 
     @PostMapping("/dedicated_account")
     PaystackDvaResponse createDedicatedAccount(@RequestBody CreateDvaRequest request);
+
+    // One page of banks; pass the previous page's meta.next as "next" to get the following page.
+    @GetMapping("/bank")
+    PaystackBankListResponse listBanks(
+            @RequestParam("country") String country,
+            @RequestParam("use_cursor") boolean useCursor,
+            @RequestParam("perPage") int perPage,
+            @RequestParam(value = "next", required = false) String next);
+
+    @GetMapping("/bank/resolve")
+    PaystackResolveAccountResponse resolveAccount(
+            @RequestParam("account_number") String accountNumber, @RequestParam("bank_code") String bankCode);
 
     // Paystack expects amounts as an integer in the lowest denomination (kobo), not a decimal.
     static long toKobo(BigDecimal naira) {

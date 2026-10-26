@@ -87,7 +87,7 @@ Interactive docs: **http://localhost:1990/swagger-ui/index.html**. Log in with `
 | Organizations | `/organizations`        | create, approve (provisions the Paystack virtual account), profiles  |
 | Accounts      | `/accounts`             | create and view an organization's accounts                           |
 | Transactions  | `/transactions`         | initiate, approve/reject, pending list, history                      |
-| External      | `/external/transaction` | Paystack funding and payouts                                         |
+| External      | `/external/transaction` | Paystack funding and payouts, bank list and account-name lookup      |
 | Currencies    | `/currencies`           | enable/disable supported currencies                                  |
 | Dashboard     | `/dashboard`            | stats for the caller's organization (or the whole platform)          |
 | Webhooks      | `/webhook/paystack`     | Paystack events (requires `x-paystack-signature`)                    |
