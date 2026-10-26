@@ -1,6 +1,8 @@
 package org.app.corporateinternetbanking.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -13,14 +15,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.jayway.jsonpath.JsonPath;
 import feign.FeignException;
 import feign.Request;
+import jakarta.servlet.http.Cookie;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import org.app.corporateinternetbanking.organization.domain.entity.Organization;
+import org.app.corporateinternetbanking.security.session.RefreshTokenCookie;
 import org.app.corporateinternetbanking.support.IntegrationTestBase;
 import org.app.corporateinternetbanking.user.domain.entity.User;
 import org.app.corporateinternetbanking.user.enums.UserRole;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
 
@@ -39,8 +44,36 @@ class SessionSecurityIntegrationTest extends IntegrationTestBase {
         login("admin@acme.com", PASSWORD)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.token").isNotEmpty())
-                .andExpect(jsonPath("$.data.refreshToken").isNotEmpty())
                 .andExpect(jsonPath("$.data.expiresIn").value(1800));
+    }
+
+    @Test
+    void theRefreshTokenOnlyTravelsInAnHttpOnlyCookie() throws Exception {
+        login("admin@acme.com", PASSWORD)
+                .andExpect(jsonPath("$.data.refreshToken").doesNotExist())
+                .andExpect(header().string(
+                                HttpHeaders.SET_COOKIE,
+                                allOf(
+                                        containsString(RefreshTokenCookie.NAME + "="),
+                                        containsString("HttpOnly"),
+                                        containsString("Path=/auth"),
+                                        containsString("SameSite=Strict"),
+                                        containsString("Max-Age=604800"))));
+    }
+
+    @Test
+    void clientsWithoutCookiesCanStillSendTheRefreshTokenInTheBody() throws Exception {
+        Tokens tokens = loginTokens();
+
+        mvc.perform(post("/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refreshToken\":\"" + tokens.refresh + "\"}"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void refreshingWithoutAnyRefreshTokenIsUnauthorized() throws Exception {
+        mvc.perform(post("/auth/refresh")).andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -76,10 +109,9 @@ class SessionSecurityIntegrationTest extends IntegrationTestBase {
         Tokens tokens = loginTokens();
         dashboard(tokens.access).andExpect(status().isOk());
 
-        mvc.perform(post("/auth/logout")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"refreshToken\":\"" + tokens.refresh + "\"}"))
-                .andExpect(status().isOk());
+        mvc.perform(post("/auth/logout").cookie(refreshCookie(tokens.refresh)))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("Max-Age=0")));
 
         dashboard(tokens.access).andExpect(status().isUnauthorized());
         refresh(tokens.refresh).andExpect(status().isUnauthorized());
@@ -146,7 +178,8 @@ class SessionSecurityIntegrationTest extends IntegrationTestBase {
                         .header("Origin", "http://localhost:5173")
                         .header("Access-Control-Request-Method", "POST"))
                 .andExpect(status().isOk())
-                .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"));
+                .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"))
+                .andExpect(header().string("Access-Control-Allow-Credentials", "true"));
 
         mvc.perform(options("/auth/login")
                         .header("Origin", "https://evil.example")
@@ -187,8 +220,13 @@ class SessionSecurityIntegrationTest extends IntegrationTestBase {
     }
 
     private static Tokens tokens(ResultActions result) throws Exception {
-        String body = result.andReturn().getResponse().getContentAsString();
-        return new Tokens(JsonPath.read(body, "$.data.token"), JsonPath.read(body, "$.data.refreshToken"));
+        var response = result.andReturn().getResponse();
+        String access = JsonPath.read(response.getContentAsString(), "$.data.token");
+        return new Tokens(access, response.getCookie(RefreshTokenCookie.NAME).getValue());
+    }
+
+    private static Cookie refreshCookie(String refreshToken) {
+        return new Cookie(RefreshTokenCookie.NAME, refreshToken);
     }
 
     private ResultActions login(String email, String password) throws Exception {
@@ -198,9 +236,7 @@ class SessionSecurityIntegrationTest extends IntegrationTestBase {
     }
 
     private ResultActions refresh(String refreshToken) throws Exception {
-        return mvc.perform(post("/auth/refresh")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"refreshToken\":\"" + refreshToken + "\"}"));
+        return mvc.perform(post("/auth/refresh").cookie(refreshCookie(refreshToken)));
     }
 
     private ResultActions dashboard(String accessToken) throws Exception {

@@ -22,6 +22,8 @@ public class CorsConfig {
                         .allowedOrigins(allowedOrigins)
                         .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                         .allowedHeaders("Authorization", "Content-Type")
+                        // Lets the browser send the refresh-token cookie to /auth/refresh and /auth/logout
+                        .allowCredentials(true)
                         .maxAge(3600);
             }
         };

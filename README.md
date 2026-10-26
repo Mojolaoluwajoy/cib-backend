@@ -97,14 +97,19 @@ header.
 
 ## Authentication
 
-1. `POST /auth/login` returns an access `token` (valid for `expiresIn` seconds, 30 minutes by default) and a
-   `refreshToken` (valid for 7 days).
+1. `POST /auth/login` returns an access `token` (valid for `expiresIn` seconds, 30 minutes by default) and sets the
+   refresh token (valid for 7 days) in the `cib_refresh` cookie. The cookie is `HttpOnly`, so browser scripts cannot
+   read it, and it is only sent to `/auth`.
 2. Send the access token as `Authorization: Bearer <token>`.
-3. Before it expires, or after a 401, call `POST /auth/refresh` with `{"refreshToken": "..."}`. You get a new pair;
-   the old refresh token stops working. Reusing an old refresh token ends the whole session, because it means the token
-   was copied.
-4. `POST /auth/logout` with the refresh token ends the session immediately, including its access token. Changing or
+3. Before it expires, or after a 401, call `POST /auth/refresh`; browsers send the cookie automatically (use
+   `credentials: 'include'`). You get a new access token and a new cookie; the old refresh token stops working. Reusing
+   an old refresh token ends the whole session, because it means the token was copied. Clients that cannot use cookies
+   can send `{"refreshToken": "..."}` instead, taking the value from the `Set-Cookie` header.
+4. `POST /auth/logout` ends the session immediately, including its access token, and clears the cookie. Changing or
    resetting a password signs out every device.
+
+Because the cookie is `SameSite=Strict` by default, the frontend and the API must be on the same site (for example
+`app.example.com` and `api.example.com`). See `REFRESH_COOKIE_SAME_SITE` in `.env.example` otherwise.
 
 Login protection: 5 failed attempts lock that email for 15 minutes, and 20 failed attempts from one IP address block it
 for 15 minutes (`429` with a `Retry-After` header). Browsers may only call the API from `CORS_ALLOWED_ORIGINS`

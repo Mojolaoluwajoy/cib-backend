@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.app.corporateinternetbanking.commons.response.GenericResponse;
 import org.app.corporateinternetbanking.security.AuthenticationService;
+import org.app.corporateinternetbanking.security.session.RefreshTokenCookie;
 import org.app.corporateinternetbanking.security.session.SessionService;
 import org.app.corporateinternetbanking.user.dto.ForgotPasswordRequest;
 import org.app.corporateinternetbanking.user.dto.PasswordResetRequest;
@@ -23,8 +24,10 @@ import org.app.corporateinternetbanking.user.exceptions.TokenExpiredOrInvalid;
 import org.app.corporateinternetbanking.user.exceptions.TooManyLoginAttempts;
 import org.app.corporateinternetbanking.user.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -44,6 +47,9 @@ public class AuthController {
     SessionService sessionService;
 
     @Autowired
+    RefreshTokenCookie refreshTokenCookie;
+
+    @Autowired
     ObjectMapper objectMapper;
 
     @SecurityRequirements
@@ -52,25 +58,36 @@ public class AuthController {
     public ResponseEntity<GenericResponse> authenticate(
             @Valid @RequestBody LoginRequest request, HttpServletRequest servletRequest) throws TooManyLoginAttempts {
         LoginResponse response = authenticationService.Authenticate(request, servletRequest.getRemoteAddr());
-        return new ResponseEntity<>(GenericResponse.success(response, "Authentication successful"), HttpStatus.OK);
+        return withRefreshCookie(response, "Authentication successful");
     }
 
     @SecurityRequirements
-    @Operation(summary = "Exchange a refresh token for a new access token and refresh token")
+    @Operation(summary = "Exchange the refresh token (cookie, or body for non-browser clients) for a new access token")
     @PostMapping("/refresh")
-    public ResponseEntity<GenericResponse> refresh(@Valid @RequestBody RefreshTokenRequest request)
+    public ResponseEntity<GenericResponse> refresh(
+            @CookieValue(name = RefreshTokenCookie.NAME, required = false) String cookieToken,
+            @RequestBody(required = false) RefreshTokenRequest request)
             throws SessionExpired {
-        return new ResponseEntity<>(
-                GenericResponse.success(sessionService.refresh(request.getRefreshToken()), "Token refreshed"),
-                HttpStatus.OK);
+        String refreshToken = refreshTokenFrom(cookieToken, request);
+        if (refreshToken == null) {
+            throw new SessionExpired("No refresh token was sent. Please log in again");
+        }
+        return withRefreshCookie(sessionService.refresh(refreshToken), "Token refreshed");
     }
 
     @SecurityRequirements
     @Operation(summary = "Log out: ends the session, so its refresh token and access tokens stop working")
     @PostMapping("/logout")
-    public ResponseEntity<GenericResponse> logout(@Valid @RequestBody RefreshTokenRequest request) {
-        sessionService.logout(request.getRefreshToken());
-        return new ResponseEntity<>(GenericResponse.success(null, "Logged out"), HttpStatus.OK);
+    public ResponseEntity<GenericResponse> logout(
+            @CookieValue(name = RefreshTokenCookie.NAME, required = false) String cookieToken,
+            @RequestBody(required = false) RefreshTokenRequest request) {
+        String refreshToken = refreshTokenFrom(cookieToken, request);
+        if (refreshToken != null) {
+            sessionService.logout(refreshToken);
+        }
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.clear())
+                .body(GenericResponse.success(null, "Logged out"));
     }
 
     @Operation(summary = "change password")
@@ -100,6 +117,27 @@ public class AuthController {
         return new ResponseEntity<>(
                 GenericResponse.success(service.resetForgottenPassword(resetRequest), "Your password has been reset"),
                 HttpStatus.CREATED);
+    }
+
+    // The refresh token goes into its HttpOnly cookie and is left out of the body, so browser scripts never see it
+    private ResponseEntity<GenericResponse> withRefreshCookie(LoginResponse response, String message) {
+        String cookie = refreshTokenCookie.issue(response.getRefreshToken());
+        response.setRefreshToken(null);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie)
+                .body(GenericResponse.success(response, message));
+    }
+
+    private static String refreshTokenFrom(String cookieToken, RefreshTokenRequest request) {
+        if (cookieToken != null && !cookieToken.isBlank()) {
+            return cookieToken;
+        }
+        if (request != null
+                && request.getRefreshToken() != null
+                && !request.getRefreshToken().isBlank()) {
+            return request.getRefreshToken();
+        }
+        return null;
     }
 
     // Accepts {"email": "..."} as well as the bare address (or JSON string) this endpoint originally took.
